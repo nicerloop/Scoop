@@ -175,6 +175,7 @@ function update_scoop() {
             continue
         }
 
+        $bucketLoc = win_path $bucketLoc
         $previousCommit = git.exe -C "$bucketLoc" rev-parse HEAD
         git_cmd -C "`"$bucketLoc`"" pull -q
         if ($show_update_log) {
