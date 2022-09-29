@@ -1254,15 +1254,6 @@ function test_running_process($app, $global) {
     }
 }
 
-function win_path($path) {
-    $win_path = $(wslpath -w $path) 2> $NULL
-    if ($LASTEXITCODE -eq 0) {
-        return $win_path
-    } else {
-        return "$(win_path $(Split-Path $path))\$(Split-Path -Leaf $path)"
-    }
-}
-
 # wrapper function to create junction links
 # Required to handle docker/for-win#12240
 function New-DirectoryJunction($source, $target) {

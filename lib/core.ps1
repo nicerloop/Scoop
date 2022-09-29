@@ -1202,6 +1202,18 @@ function Out-UTF8File {
     }
 }
 
+function win_path($path) {
+    if (!$is_wsl) {
+        return $path
+    }
+    $win_path = $(wslpath -w $path) 2> $NULL
+    if ($LASTEXITCODE -eq 0) {
+        return $win_path
+    } else {
+        return "$(win_path $(Split-Path $path))\$(Split-Path -Leaf $path)"
+    }
+}
+
 ##################
 # Core Bootstrap #
 ##################

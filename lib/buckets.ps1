@@ -98,9 +98,9 @@ function list_buckets {
     Get-LocalBucket | ForEach-Object {
         $bucket = [Ordered]@{ Name = $_ }
         $path = Find-BucketDirectory $_ -Root
-        if ((Test-Path (Join-Path $path '.git')) -and (Get-Command git -ErrorAction SilentlyContinue)) {
-            $bucket.Source = git -C $path config remote.origin.url
-            $bucket.Updated = git -C $path log --format='%aD' -n 1 | Get-Date
+        if ((Test-Path (Join-Path $path '.git')) -and (Get-Command git.exe -ErrorAction SilentlyContinue)) {
+            $bucket.Source = git.exe -C $path config remote.origin.url
+            $bucket.Updated = git.exe -C $path log --format='%aD' -n 1 | Get-Date
         } else {
             $bucket.Source = friendly_path $path
             $bucket.Updated = (Get-Item $(Join-Path $path "bucket")).LastWriteTime
@@ -113,7 +113,7 @@ function list_buckets {
 }
 
 function add_bucket($name, $repo) {
-    if (!(Test-CommandAvailable git)) {
+    if (!(Test-CommandAvailable git.exe)) {
         error "Git is required for buckets. Run 'scoop install git' and try again."
         return 1
     }
@@ -130,7 +130,7 @@ function add_bucket($name, $repo) {
     }
     foreach ($bucket in Get-LocalBucket) {
         if (Test-Path -Path $(Join-Path $bucketsdir $bucket ".git")) {
-            $remote = git -C $(Join-Path $bucketsdir $bucket) config --get remote.origin.url
+            $remote = git.exe -C $(win_path $(Join-Path $bucketsdir $bucket)) config --get remote.origin.url
             if ((Convert-RepositoryUri -Uri $remote) -eq $uni_repo) {
                 warn "Bucket $bucket already exists for $repo"
                 return 2
@@ -145,7 +145,7 @@ function add_bucket($name, $repo) {
         return 1
     }
     ensure $bucketsdir | Out-Null
-    $dir = ensure $dir
+    $dir = win_path $( ensure $dir )
     git_cmd clone "$repo" "`"$dir`"" -q
     Write-Host 'OK'
     success "The $name bucket was added successfully."
@@ -169,7 +169,7 @@ function new_issue_msg($app, $bucket, $title, $body) {
     $bucket_path = Join-Path $bucketsdir $bucket
 
     if (Test-Path $bucket_path) {
-        $remote = git -C "$bucket_path" config --get remote.origin.url
+        $remote = git.exe -C "$bucket_path" config --get remote.origin.url
         # Support ssh and http syntax
         # git@PROVIDER:USER/REPO.git
         # https://PROVIDER/USER/REPO.git
