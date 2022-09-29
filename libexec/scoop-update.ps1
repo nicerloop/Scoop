@@ -178,7 +178,7 @@ function update_scoop() {
         $previousCommit = git.exe -C "$bucketLoc" rev-parse HEAD
         git_cmd -C "`"$bucketLoc`"" pull -q
         if ($show_update_log) {
-            git -C "$bucketLoc" --no-pager log --no-decorate --grep='^(chore)' --invert-grep --format='tformat: * %C(yellow)%h%Creset %<|(72,trunc)%s %C(cyan)%cr%Creset' "$previousCommit..HEAD"
+            git.exe -C "$bucketLoc" --no-pager log --no-decorate --grep='^(chore)' --invert-grep --format='tformat: * %C(yellow)%h%Creset %<|(72,trunc)%s %C(cyan)%cr%Creset' "$previousCommit..HEAD"
         }
     }
 
