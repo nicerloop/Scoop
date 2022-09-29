@@ -57,7 +57,7 @@ if(($PSVersionTable.PSVersion.Major) -lt 5) {
 
 function update_scoop() {
     # check for git
-    if(!(Test-CommandAvailable git)) { abort "Scoop uses Git to update itself. Run 'scoop install git' and try again." }
+    if(!(Test-CommandAvailable git.exe)) { abort "Scoop uses Git to update itself. Run 'scoop install git' and try again." }
 
     Write-Host "Updating Scoop..."
     $last_update = $(last_scoop_update)
@@ -69,8 +69,16 @@ function update_scoop() {
         $newdir = Join-Path $currentdir ".." "new"
         $olddir = Join-Path $currentdir ".." "old"
 
+        if ($is_wsl) {
+            $newdir = win_path $newdir
+        }
+
         # get git scoop
         git_cmd clone -q $configRepo --branch $configBranch --single-branch "`"$newdir`""
+
+        if ($is_wsl) {
+            $newdir = wslpathh -u $newdir
+        }
 
         # check if scoop was successful downloaded
         if (!(Test-Path $(Join-Path $newdir "bin" "scoop.ps1"))) {
@@ -91,35 +99,39 @@ function update_scoop() {
             Remove-Item $(Join-Path $currentdir ".." "old") -Recurse -Force -ErrorAction SilentlyContinue
         }
 
-        $previousCommit = git -C "$currentdir" rev-parse HEAD
-        $currentRepo = git -C "$currentdir" config remote.origin.url
-        $currentBranch = git -C "$currentdir" branch
+        if ($is_wsl) {
+            $currentdir = win_path $currentdir
+        }
+
+        $previousCommit = git.exe -C "$currentdir" rev-parse HEAD
+        $currentRepo = git.exe -C "$currentdir" config remote.origin.url
+        $currentBranch = git.exe -C "$currentdir" branch
 
         $isRepoChanged = !($currentRepo -match $configRepo)
         $isBranchChanged = !($currentBranch -match "\*\s+$configBranch")
 
         # Change remote url if the repo is changed
         if ($isRepoChanged) {
-            git -C "$currentdir" config remote.origin.url "$configRepo"
+            git.exe -C "$currentdir" config remote.origin.url "$configRepo"
         }
 
         # Fetch and reset local repo if the repo or the branch is changed
         if ($isRepoChanged -or $isBranchChanged) {
             # Reset git fetch refs, so that it can fetch all branches (GH-3368)
-            git -C "$currentdir" config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*'
+            git.exe -C "$currentdir" config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*'
             # fetch remote branch
             git_cmd -C "`"$currentdir`"" fetch --force origin "refs/heads/`"$configBranch`":refs/remotes/origin/$configBranch" -q
             # checkout and track the branch
             git_cmd -C "`"$currentdir`"" checkout -B $configBranch -t origin/$configBranch -q
             # reset branch HEAD
-            git -C "$currentdir" reset --hard origin/$configBranch -q
+            git.exe -C "$currentdir" reset --hard origin/$configBranch -q
         } else {
             git_cmd -C "`"$currentdir`"" pull -q
         }
 
         $res = $lastexitcode
         if ($show_update_log) {
-            git -C "$currentdir" --no-pager log --no-decorate --grep='^(chore)' --invert-grep --format='tformat: * %C(yellow)%h%Creset %<|(72,trunc)%s %C(cyan)%cr%Creset' "$previousCommit..HEAD"
+            git.exe -C "$currentdir" --no-pager log --no-decorate --grep='^(chore)' --invert-grep --format='tformat: * %C(yellow)%h%Creset %<|(72,trunc)%s %C(cyan)%cr%Creset' "$previousCommit..HEAD"
         }
 
         if ($res -ne 0) {
@@ -159,7 +171,7 @@ function update_scoop() {
             continue
         }
 
-        $previousCommit = git -C "$bucketLoc" rev-parse HEAD
+        $previousCommit = git.exe -C "$bucketLoc" rev-parse HEAD
         git_cmd -C "`"$bucketLoc`"" pull -q
         if ($show_update_log) {
             git -C "$bucketLoc" --no-pager log --no-decorate --grep='^(chore)' --invert-grep --format='tformat: * %C(yellow)%h%Creset %<|(72,trunc)%s %C(cyan)%cr%Creset' "$previousCommit..HEAD"
