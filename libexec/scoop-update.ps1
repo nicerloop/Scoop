@@ -77,7 +77,7 @@ function update_scoop() {
         git_cmd clone -q $configRepo --branch $configBranch --single-branch "`"$newdir`""
 
         if ($is_wsl) {
-            $newdir = wslpathh -u $newdir
+            $newdir = wslpath -u $newdir
         }
 
         # check if scoop was successful downloaded
