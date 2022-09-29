@@ -20,8 +20,8 @@ switch ($subCommand) {
     }
     ({ $subCommand -in @('-v', '--version') }) {
         Write-Host 'Current Scoop version:'
-        if ((Test-CommandAvailable git) -and (Test-Path $(Join-Path $PSScriptRoot ".." ".git")) -and (get_config SCOOP_BRANCH 'master') -ne 'master') {
-            git -C $(Join-Path $PSScriptRoot "..") --no-pager log --oneline HEAD -n 1
+        if ((Test-CommandAvailable git.exe) -and (Test-Path $(Join-Path $PSScriptRoot ".." ".git")) -and (get_config SCOOP_BRANCH 'master') -ne 'master') {
+            git.exe -C $(win_path $(Join-Path $PSScriptRoot "..")) --no-pager log --oneline HEAD -n 1
         } else {
             $version = Select-String -Pattern '^## \[(v[\d.]+)\].*?([\d-]+)$' -Path $(Join-Path $PSScriptRoot ".." "CHANGELOG.md")
             Write-Host $version.Matches.Groups[1].Value -ForegroundColor Cyan -NoNewline
