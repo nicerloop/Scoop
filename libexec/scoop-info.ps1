@@ -221,7 +221,7 @@ if ($env_add_path) {
         $env_path += if ($_ -eq '.') {
             $dir
         } else {
-            "$dir\$_"
+            $(Join-Path $dir $_)
         }
     }
     $item.'Path Added' = $env_path -join "`n"

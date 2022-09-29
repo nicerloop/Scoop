@@ -1,4 +1,4 @@
-$modulesdir = "$scoopdir\modules"
+$modulesdir = Join-Path $scoopdir "modules"
 
 function install_psmodule($manifest, $dir, $global) {
     $psmodule = $manifest.psmodule
@@ -16,7 +16,7 @@ function install_psmodule($manifest, $dir, $global) {
         abort "Invalid manifest: The 'name' property is missing from 'psmodule'."
     }
 
-    $linkfrom = "$modulesdir\$module_name"
+    $linkfrom = Join-Path $modulesdir $module_name
     Write-Host "Installing PowerShell module '$module_name'"
 
     Write-Host "Linking $(friendly_path $linkfrom) => $(friendly_path $dir)"
@@ -36,7 +36,7 @@ function uninstall_psmodule($manifest, $dir, $global) {
     $module_name = $psmodule.name
     Write-Host "Uninstalling PowerShell module '$module_name'."
 
-    $linkfrom = "$modulesdir\$module_name"
+    $linkfrom = Join-Path $modulesdir $module_name
     if (Test-Path $linkfrom) {
         Write-Host "Removing $(friendly_path $linkfrom)"
         $linkfrom = Resolve-Path $linkfrom

@@ -56,9 +56,9 @@ foreach ($item in $import.apps) {
         $item.Source
     }
 
-    & "$PSScriptRoot\scoop-install.ps1" $app$global$arch
+    & $(Join-Path $PSScriptRoot "scoop-install.ps1") $app$global$arch
 
     if ('Held package' -in $info) {
-        & "$PSScriptRoot\scoop-hold.ps1" $($item.Name)$global
+        & $(Join-Path $PSScriptRoot "scoop-hold.ps1") $($item.Name)$global
     }
 }

@@ -1,5 +1,5 @@
 function command_files {
-    (Get-ChildItem "$PSScriptRoot\..\libexec") + (Get-ChildItem "$scoopdir\shims") |
+    (Get-ChildItem $(Join-Path $PSScriptRoot ".." "libexec")) + (Get-ChildItem $(Join-Path $scoopdir "shims")) |
         Where-Object 'scoop-.*?\.ps1$' -Property Name -Match
 }
 
@@ -12,12 +12,12 @@ function command_name($filename) {
 }
 
 function command_path($cmd) {
-    $cmd_path = "$PSScriptRoot\..\libexec\scoop-$cmd.ps1"
+    $cmd_path = Join-Path $PSScriptRoot ".." "libexec" "scoop-$cmd.ps1"
 
     # built in commands
     if (!(Test-Path $cmd_path)) {
         # get path from shim
-        $shim_path = "$scoopdir\shims\scoop-$cmd.ps1"
+        $shim_path = Join-Path $scoopdir "shims" "scoop-$cmd.ps1"
         $line = ((Get-Content $shim_path) | Where-Object { $_.startswith('$path') })
         if($line) {
             Invoke-Command ([scriptblock]::Create($line)) -NoNewScope

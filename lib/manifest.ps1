@@ -1,5 +1,5 @@
 function manifest_path($app, $bucket) {
-    fullpath "$(Find-BucketDirectory $bucket)\$(sanitary_path $app).json"
+    fullpath $(Join-Path $(Find-BucketDirectory $bucket) "$(sanitary_path $app).json")
 }
 
 function parse_json($path) {
@@ -78,14 +78,14 @@ function save_installed_manifest($app, $bucket, $dir, $url) {
         $wc = New-Object Net.Webclient
         $wc.Headers.Add('User-Agent', (Get-UserAgent))
         $data = $wc.DownloadData($url)
-        (Get-Encoding($wc)).GetString($data) | Out-UTF8File "$dir\manifest.json"
+        (Get-Encoding($wc)).GetString($data) | Out-UTF8File $(Join-Path $dir "manifest.json")
     } else {
-        Copy-Item (manifest_path $app $bucket) "$dir\manifest.json"
+        Copy-Item (manifest_path $app $bucket) $(Join-Path $dir "manifest.json")
     }
 }
 
 function installed_manifest($app, $version, $global) {
-    parse_json "$(versiondir $app $version $global)\manifest.json"
+    parse_json $(Join-Path $(versiondir $app $version $global) "manifest.json")
 }
 
 function save_install_info($info, $dir) {
@@ -93,11 +93,11 @@ function save_install_info($info, $dir) {
     $nulls | ForEach-Object { $info.remove($_) } # strip null-valued
 
     $file_content = $info | ConvertToPrettyJson # in 'json.ps1'
-    [System.IO.File]::WriteAllLines("$dir\install.json", $file_content)
+    [System.IO.File]::WriteAllLines($(Join-Path $dir "install.json"), $file_content)
 }
 
 function install_info($app, $version, $global) {
-    $path = "$(versiondir $app $version $global)\install.json"
+    $path = Join-Path $(versiondir $app $version $global) "install.json"
     if (!(Test-Path $path)) { return $null }
     parse_json $path
 }

@@ -20,7 +20,7 @@ if (!(Get-FormatData ScoopStatus)) {
 }
 
 function Test-UpdateStatus($repopath) {
-    if (Test-Path "$repopath\.git") {
+    if (Test-Path $(Join-Path $repopath ".git")) {
         git_cmd -C "`"$repopath`"" fetch -q origin
         $script:network_failure = 128 -eq $LASTEXITCODE
         $branch  = git -C $repopath branch --show-current

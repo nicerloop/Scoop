@@ -27,7 +27,14 @@ function Expand-7zipArchive {
     } else {
         $7zPath = Get-HelperPath -Helper 7zip
     }
-    $LogPath = "$(Split-Path $Path)\7zip.log"
+    $LogPath = Join-Path $(Split-Path $Path) "7zip.log"
+    if ($is_wsl) {
+        $Path = win_path $Path
+        $DestinationPath = win_path $DestinationPath
+        if ($ExtractDir) {
+            $ExtractDir = win_path $ExtractDir
+        }
+    }
     $ArgList = @('x', $Path, "-o$DestinationPath", '-y')
     $IsTar = ((strip_ext $Path) -match '\.tar$') -or ($Path -match '\.t[abgpx]z2?$')
     if (!$IsTar -and $ExtractDir) {
@@ -46,7 +53,7 @@ function Expand-7zipArchive {
         abort "Failed to extract files from $Path.`nLog file:`n  $(friendly_path $LogPath)`n$(new_issue_msg $app $bucket 'decompress error')"
     }
     if (!$IsTar -and $ExtractDir) {
-        movedir "$DestinationPath\$ExtractDir" $DestinationPath | Out-Null
+        movedir $(Join-Path $DestinationPath $ExtractDir) $DestinationPath | Out-Null
     }
     if (Test-Path $LogPath) {
         Remove-Item $LogPath -Force
@@ -63,6 +70,9 @@ function Expand-7zipArchive {
         }
     }
     if ($Removal) {
+        if ($is_wsl) {
+            $Path = wslpath -u $Path
+        }
         # Remove original archive file
         if (($Path -replace '.*\.([^\.]*)$', '$1') -eq '001') {
             # Remove splited 7-zip archive parts
@@ -144,7 +154,7 @@ function Expand-MsiArchive {
     $DestinationPath = $DestinationPath.TrimEnd('\')
     if ($ExtractDir) {
         $OriDestinationPath = $DestinationPath
-        $DestinationPath = "$DestinationPath\_tmp"
+        $DestinationPath = Join-Path $DestinationPath "_tmp"
     }
     if ((get_config MSIEXTRACT_USE_LESSMSI)) {
         $MsiPath = Get-HelperPath -Helper Lessmsi
@@ -153,7 +163,12 @@ function Expand-MsiArchive {
         $MsiPath = 'msiexec.exe'
         $ArgList = @('/a', "`"$Path`"", '/qn', "TARGETDIR=`"$DestinationPath\SourceDir`"")
     }
-    $LogPath = "$(Split-Path $Path)\msi.log"
+    $LogPath = Join-Path $(Split-Path $Path) "msi.log"
+    if ($is_wsl) {
+        $MsiPath = 'msiexec.exe'
+        $ArgList = @('/a', "`"$(win_path $Path)`"", '/qn', "TARGETDIR=`"$(win_path $DestinationPath)\SourceDir`"")
+        $LogPath = win_path $LogPath
+    }
     if ($Switches) {
         $ArgList += (-split $Switches)
     }
@@ -161,17 +176,17 @@ function Expand-MsiArchive {
     if (!$Status) {
         abort "Failed to extract files from $Path.`nLog file:`n  $(friendly_path $LogPath)`n$(new_issue_msg $app $bucket 'decompress error')"
     }
-    if ($ExtractDir -and (Test-Path "$DestinationPath\SourceDir")) {
-        movedir "$DestinationPath\SourceDir\$ExtractDir" $OriDestinationPath | Out-Null
+    if ($ExtractDir -and (Test-Path $(Join-Path $DestinationPath "SourceDir"))) {
+        movedir $(Join-Path $DestinationPath "SourceDir" $ExtractDir) $OriDestinationPath | Out-Null
         Remove-Item $DestinationPath -Recurse -Force
     } elseif ($ExtractDir) {
-        movedir "$DestinationPath\$ExtractDir" $OriDestinationPath | Out-Null
+        movedir $(Join-Path $DestinationPath $ExtractDir) $OriDestinationPath | Out-Null
         Remove-Item $DestinationPath -Recurse -Force
-    } elseif (Test-Path "$DestinationPath\SourceDir") {
-        movedir "$DestinationPath\SourceDir" $DestinationPath | Out-Null
+    } elseif (Test-Path $(Join-Path $DestinationPath "SourceDir")) {
+        movedir $(Join-Path $DestinationPath "SourceDir") $DestinationPath | Out-Null
     }
-    if (($DestinationPath -ne (Split-Path $Path)) -and (Test-Path "$DestinationPath\$(fname $Path)")) {
-        Remove-Item "$DestinationPath\$(fname $Path)" -Force
+    if (($DestinationPath -ne (Split-Path $Path)) -and (Test-Path $(Join-Path $DestinationPath $(fname $Path)))) {
+        Remove-Item $(Join-Path $DestinationPath $(fname $Path)) -Force
     }
     if (Test-Path $LogPath) {
         Remove-Item $LogPath -Force
@@ -199,7 +214,7 @@ function Expand-InnoArchive {
         [Switch]
         $Removal
     )
-    $LogPath = "$(Split-Path $Path)\innounp.log"
+    $LogPath = Join-Path $(Split-Path $Path) "innounp.log"
     $ArgList = @('-x', "-d$DestinationPath", $Path, '-y')
     switch -Regex ($ExtractDir) {
         '^[^{].*' { $ArgList += "-c{app}\$ExtractDir" }
@@ -238,11 +253,11 @@ function Expand-ZipArchive {
     )
     if ($ExtractDir) {
         $OriDestinationPath = $DestinationPath
-        $DestinationPath = "$DestinationPath\_tmp"
+        $DestinationPath = Join-Path $DestinationPath "_tmp"
     }
     Expand-Archive -Path $Path -DestinationPath $DestinationPath -Force
     if ($ExtractDir) {
-        movedir "$DestinationPath\$ExtractDir" $OriDestinationPath | Out-Null
+        movedir $(Join-Path $DestinationPath $ExtractDir) $OriDestinationPath | Out-Null
         Remove-Item $DestinationPath -Recurse -Force
     }
     if ($Removal) {
@@ -266,7 +281,7 @@ function Expand-DarkArchive {
         [Switch]
         $Removal
     )
-    $LogPath = "$(Split-Path $Path)\dark.log"
+    $LogPath = Join-Path $(Split-Path $Path) "dark.log"
     $ArgList = @('-nologo', '-x', $DestinationPath, $Path)
     if ($Switches) {
         $ArgList += (-split $Switches)

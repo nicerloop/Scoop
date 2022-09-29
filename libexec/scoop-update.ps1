@@ -65,15 +65,15 @@ function update_scoop() {
     $last_update = $last_update.ToString('s')
     $show_update_log = get_config 'show_update_log' $true
     $currentdir = fullpath $(versiondir 'scoop' 'current')
-    if (!(Test-Path "$currentdir\.git")) {
-        $newdir = "$currentdir\..\new"
-        $olddir = "$currentdir\..\old"
+    if (!(Test-Path $(Join-Path $currentdir ".git")) {
+        $newdir = Join-Path $currentdir ".." "new"
+        $olddir = Join-Path $currentdir ".." "old"
 
         # get git scoop
         git_cmd clone -q $configRepo --branch $configBranch --single-branch "`"$newdir`""
 
         # check if scoop was successful downloaded
-        if (!(Test-Path "$newdir\bin\scoop.ps1")) {
+        if (!(Test-Path $(Join-Path $newdir "bin" "scoop.ps1"))) {
             Remove-Item $newdir -Force -Recurse
             abort "Scoop download failed. If this appears several times, try removing SCOOP_REPO by 'scoop config rm SCOOP_REPO'"
         } else {
@@ -87,8 +87,8 @@ function update_scoop() {
             }
         }
     } else {
-        if (Test-Path "$currentdir\..\old") {
-            Remove-Item "$currentdir\..\old" -Recurse -Force -ErrorAction SilentlyContinue
+        if (Test-Path $(Join-Path $currentdir ".." "old")) {
+            Remove-Item $(Join-Path $currentdir ".." "old" -Recurse -Force -ErrorAction SilentlyContinue
         }
 
         $previousCommit = git -C "$currentdir" rev-parse HEAD
@@ -134,7 +134,7 @@ function update_scoop() {
     #     add_bucket 'main'
     # }
 
-    shim "$currentdir\bin\scoop.ps1" $false
+    shim $(Join-Path $currentdir "bin" "scoop.ps1") $false
 
     foreach ($bucket in Get-LocalBucket) {
         Write-Host "Updating '$bucket' bucket..."

@@ -8,7 +8,7 @@
 $issues = 0
 $defenderIssues = 0
 
-$adminPrivileges = ([System.Security.Principal.WindowsPrincipal] [System.Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
+$adminPrivileges = $PSVersionTable.OS -match "Windows" -And ([System.Security.Principal.WindowsPrincipal] [System.Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
 
 if ($adminPrivileges) {
     $defenderIssues += !(check_windows_defender $false)

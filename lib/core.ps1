@@ -204,10 +204,10 @@ function filesize($length) {
 
 # dirs
 function basedir($global) { if($global) { return $globaldir } $scoopdir }
-function appsdir($global) { "$(basedir $global)\apps" }
-function shimdir($global) { "$(basedir $global)\shims" }
-function appdir($app, $global) { "$(appsdir $global)\$app" }
-function versiondir($app, $version, $global) { "$(appdir $app $global)\$version" }
+function appsdir($global) { Join-Path $(basedir $global) "apps" }
+function shimdir($global) { Join-Path $(basedir $global) "shims" }
+function appdir($app, $global) { Join-Path $(appsdir $global) $app }
+function versiondir($app, $version, $global) { Join-Path $(appdir $app $global) $version }
 
 function currentdir($app, $global) {
     if (get_config NO_JUNCTIONS) {
@@ -215,13 +215,13 @@ function currentdir($app, $global) {
     } else {
         $version = 'current'
     }
-    "$(appdir $app $global)\$version"
+    Join-Path $(appdir $app $global) $version
 }
 
-function persistdir($app, $global) { "$(basedir $global)\persist\$app" }
-function usermanifestsdir { "$(basedir)\workspace" }
-function usermanifest($app) { "$(usermanifestsdir)\$app.json" }
-function cache_path($app, $version, $url) { "$cachedir\$app#$version#$($url -replace '[^\w\.\-]+', '_')" }
+function persistdir($app, $global) { Join-Path $(basedir $global) "persist" $app }
+function usermanifestsdir { Join-Path $(basedir) "workspace" }
+function usermanifest($app) { Join-Path $(usermanifestsdir) "$app.json" }
+function cache_path($app, $version, $url) { Join-Path $cachedir "$app#$version#$($url -replace '[^\w\.\-]+', '_')" }
 
 # apps
 function sanitary_path($path) { return [regex]::replace($path, "[/\\?:*<>|]", "") }
@@ -246,7 +246,7 @@ function installed_apps($global) {
 function failed($app, $global) {
     $app = ($app -split '/|\\')[-1]
     $appPath = appdir $app $global
-    $hasCurrent = (get_config NO_JUNCTIONS) -or (Test-Path "$appPath\current")
+    $hasCurrent = (get_config NO_JUNCTIONS) -or (Test-Path $(Join-Path $appPath "current"))
     return (Test-Path $appPath) -and !($hasCurrent -and (installed $app $global))
 }
 
@@ -268,13 +268,13 @@ function Get-AppFilePath {
     )
 
     # normal path to file
-    $Path = "$(currentdir $App $false)\$File"
+    $Path = Join-Path $(currentdir $App $false) $File
     if (Test-Path $Path) {
         return $Path
     }
 
     # global path to file
-    $Path = "$(currentdir $App $true)\$File"
+    $Path = Join-Path $(currentdir $App $true) $File
     if (Test-Path $Path) {
         return $Path
     }
@@ -594,8 +594,16 @@ function dl($url,$to) {
 
 function env($name,$global,$val='__get') {
     $target = 'User'; if($global) {$target = 'Machine'}
-    if($val -eq '__get') { [environment]::getEnvironmentVariable($name,$target) }
-    else { [environment]::setEnvironmentVariable($name,$val,$target) }
+    if ($is_wsl) {
+        if($val -eq '__get') {
+            powershell.exe -c "[environment]::getEnvironmentVariable(`'$name`',`'$target`')"
+        } else {
+            powershell.exe -c "[environment]::setEnvironmentVariable(`'$name`',`'$val`',`'$target`')"
+        }
+    } else {
+        if($val -eq '__get') { [environment]::getEnvironmentVariable($name,$target) }
+        else { [environment]::setEnvironmentVariable($name,$val,$target) }
+    }
 }
 
 function isFileLocked([string]$path) {
@@ -625,6 +633,11 @@ function is_directory([String] $path) {
 function movedir($from, $to) {
     $from = $from.trimend('\')
     $to = $to.trimend('\')
+
+    if ($is_wsl) {
+        $from = win_path $from
+        $to = win_path $to
+    }
 
     $proc = New-Object System.Diagnostics.Process
     $proc.StartInfo.FileName = 'robocopy.exe'
@@ -708,13 +721,15 @@ function shim($path, $global, $name, $arg) {
     ensure_in_path $abs_shimdir $global
     if (!$name) { $name = strip_ext (fname $path) }
 
-    $shim = "$abs_shimdir\$($name.tolower())"
+    $shim = Join-Path $abs_shimdir $($name.tolower())
 
     # convert to relative path
     Push-Location $abs_shimdir
     $relative_path = Resolve-Path -Relative $path
     Pop-Location
     $resolved_path = Resolve-Path $path
+
+    if ($is_wsl) { $resolved_path = win_path $resolved_path }
 
     if ($path -match '\.(exe|com)$') {
         # for programs with no awareness of any shell
@@ -829,11 +844,11 @@ function shim($path, $global, $name, $arg) {
 }
 
 function get_shim_path() {
-    $shim_path = "$(versiondir 'scoop' 'current')\supporting\shims\kiennq\shim.exe"
+    $shim_path = Join-Path $(versiondir 'scoop' 'current') "supporting" "shims" "kiennq" "shim.exe"
     $shim_version = get_config 'shim' 'default'
     switch ($shim_version) {
-        '71' { $shim_path = "$(versiondir 'scoop' 'current')\supporting\shims\71\shim.exe"; Break }
-        'scoopcs' { $shim_path = "$(versiondir 'scoop' 'current')\supporting\shimexe\bin\shim.exe"; Break }
+        '71' { $shim_path = Join-Path $(versiondir 'scoop' 'current') "supporting" "shims" "71" "shim.exe"; Break }
+        'scoopcs' { $shim_path = Join-Path $(versiondir 'scoop' 'current') "supporting" "shimexe" "bin" "shim.exe"; Break }
         'kiennq' { Break } # for backward compatibility
         'default' { Break }
         default { warn "Unknown shim version: '$shim_version'" }
@@ -844,8 +859,8 @@ function get_shim_path() {
 function search_in_path($target) {
     $path = (env 'PATH' $false) + ";" + (env 'PATH' $true)
     foreach($dir in $path.split(';')) {
-        if(test-path "$dir\$target" -pathType leaf) {
-            return "$dir\$target"
+        if(test-path $(Join-Path $dir $target) -pathType leaf) {
+            return $(Join-Path $dir $target)
         }
     }
 }
@@ -1187,11 +1202,11 @@ function Out-UTF8File {
 Optimize-SecurityProtocol
 
 # Scoop config file migration
-$configHome = $env:XDG_CONFIG_HOME, "$env:USERPROFILE\.config" | Select-Object -First 1
-$configFile = "$configHome\scoop\config.json"
-if ((Test-Path "$env:USERPROFILE\.scoop") -and !(Test-Path $configFile)) {
+$configHome = $env:XDG_CONFIG_HOME, $(Join-Path $env:USERPROFILE ".config") | Select-Object -First 1
+$configFile = $(Join-Path $configHome "scoop" "config.json")
+if ((Test-Path $(Join-Path $env:USERPROFILE ".scoop")) -and !(Test-Path $configFile)) {
     New-Item -ItemType Directory (Split-Path -Path $configFile) -ErrorAction Ignore | Out-Null
-    Move-Item "$env:USERPROFILE\.scoop" $configFile
+    Move-Item $(Join-Path $env:USERPROFILE ".scoop" $configFile)
     write-host "WARN  Scoop configuration has been migrated from '~/.scoop'" -f darkyellow
     write-host "WARN  to '$configFile'" -f darkyellow
 }
@@ -1200,17 +1215,19 @@ if ((Test-Path "$env:USERPROFILE\.scoop") -and !(Test-Path $configFile)) {
 $scoopConfig = load_cfg $configFile
 
 # Scoop root directory
-$scoopdir = $env:SCOOP, (get_config 'rootPath'), "$env:USERPROFILE\scoop" | Where-Object { -not [String]::IsNullOrEmpty($_) } | Select-Object -First 1
+$scoopdir = $env:SCOOP, (get_config 'rootPath'), $(Join-Path $env:USERPROFILE "scoop") | Where-Object { -not [String]::IsNullOrEmpty($_) } | Select-Object -First 1
 
 # Scoop global apps directory
-$globaldir = $env:SCOOP_GLOBAL, (get_config 'globalPath'), "$env:ProgramData\scoop" | Where-Object { -not [String]::IsNullOrEmpty($_) } | Select-Object -first 1
+$globaldir = $env:SCOOP_GLOBAL, (get_config 'globalPath'), $(Join-Path $env:ProgramData "scoop") | Where-Object { -not [String]::IsNullOrEmpty($_) } | Select-Object -first 1
 
 # Scoop cache directory
 # Note: Setting the SCOOP_CACHE environment variable to use a shared directory
 #       is experimental and untested. There may be concurrency issues when
 #       multiple users write and access cached files at the same time.
 #       Use at your own risk.
-$cachedir = $env:SCOOP_CACHE, (get_config 'cachePath'), "$scoopdir\cache" | Where-Object { -not [String]::IsNullOrEmpty($_) } | Select-Object -first 1
+$cachedir = $env:SCOOP_CACHE, (get_config 'cachePath'), $(Join-Path $scoopdir "cache") | Where-Object { -not [String]::IsNullOrEmpty($_) } | Select-Object -first 1
 
 # Setup proxy globally
 setup_proxy
+
+$is_wsl = $PSVersionTable.OS.ToLower().Contains('wsl')

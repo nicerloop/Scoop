@@ -234,7 +234,7 @@ function dl_with_cache_aria2($app, $version, $manifest, $architecture, $dir, $co
 
     foreach ($url in $urls) {
         $data.$url = @{
-            'target'    = "$dir\$(url_filename $url)"
+            'target'    = Join-Path $dir $(url_filename $url)
             'cachename' = fname (cache_path $app $version $url)
             'source'    = fullpath (cache_path $app $version $url)
         }
@@ -551,7 +551,7 @@ function dl_urls($app, $version, $manifest, $bucket, $architecture, $dir, $use_c
             $fname = url_filename $url
 
             try {
-                dl_with_cache $app $version $url "$dir\$fname" $cookies $use_cache
+                dl_with_cache $app $version $url $(Join-Path $dir $fname) $cookies $use_cache
             } catch {
                 write-host -f darkred $_
                 abort "URL $url is not valid"
@@ -559,7 +559,7 @@ function dl_urls($app, $version, $manifest, $bucket, $architecture, $dir, $use_c
 
             if($check_hash) {
                 $manifest_hash = hash_for_url $manifest $url $architecture
-                $ok, $err = check_hash "$dir\$fname" $manifest_hash $(show_app $app $bucket)
+                $ok, $err = check_hash $(Join-Path $dir $fname) $manifest_hash $(show_app $app $bucket)
                 if(!$ok) {
                     error $err
                     $cached = cache_path $app $version $url
@@ -610,7 +610,7 @@ function dl_urls($app, $version, $manifest, $bucket, $architecture, $dir, $use_c
             Write-Host "Extracting " -NoNewline
             Write-Host $fname -f Cyan -NoNewline
             Write-Host " ... " -NoNewline
-            & $extract_fn -Path "$dir\$fname" -DestinationPath "$dir\$extract_to" -ExtractDir $extract_dir -Removal
+            & $extract_fn -Path $(Join-Path $dir $fname) -DestinationPath $(Join-Path $dir $extract_to) -ExtractDir $extract_dir -Removal
             Write-Host "done." -f Green
             $extracted++
         }
@@ -735,14 +735,14 @@ function run_installer($fname, $manifest, $architecture, $dir, $global) {
 
 # deprecated (see also msi_installed)
 function install_msi($fname, $dir, $msi) {
-    $msifile = "$dir\$(coalesce $msi.file "$fname")"
+    $msifile = Join-Path $dir $(coalesce $msi.file "$fname")
     if(!(is_in_dir $dir $msifile)) {
         abort "Error in manifest: MSI file $msifile is outside the app directory."
     }
     if(!($msi.code)) { abort "Error in manifest: Couldn't find MSI code."}
     if(msi_installed $msi.code) { abort "The MSI package is already installed on this system." }
 
-    $logfile = "$dir\install.log"
+    $logfile = Join-Path $dir "install.log"
 
     $arg = @("/i `"$msifile`"", '/norestart', "/lvp `"$logfile`"", "TARGETDIR=`"$dir`"",
         "INSTALLDIR=`"$dir`"") + @(args $msi.args $dir)
@@ -775,7 +775,7 @@ function msi_installed($code) {
 }
 
 function install_prog($fname, $dir, $installer, $global) {
-    $prog = "$dir\$(coalesce $installer.file "$fname")"
+    $prog = Join-Path $dir $(coalesce $installer.file "$fname")
     if(!(is_in_dir $dir $prog)) {
         abort "Error in manifest: Installer $prog is outside the app directory."
     }
@@ -822,7 +822,7 @@ function run_uninstaller($manifest, $architecture, $dir) {
             $continue_exit_codes.1605 = 'not installed, skipping'
             $continue_exit_codes.3010 = 'restart required'
         } elseif($uninstaller) {
-            $exe = "$dir\$($uninstaller.file)"
+            $exe = Join-Path $dir $($uninstaller.file)
             $arg = args $uninstaller.args
             if(!(is_in_dir $dir $exe)) {
                 warn "Error in manifest: Installer $exe is outside the app directory, skipping."
@@ -856,8 +856,8 @@ function create_shims($manifest, $dir, $global, $arch) {
         $target, $name, $arg = shim_def $_
         write-output "Creating shim for '$name'."
 
-        if(test-path "$dir\$target" -pathType leaf) {
-            $bin = "$dir\$target"
+        if(test-path $(Join-Path $dir $target) -pathType leaf) {
+            $bin = Join-Path $dir $target
         } elseif(test-path $target -pathType leaf) {
             $bin = $target
         } else {
@@ -871,7 +871,7 @@ function create_shims($manifest, $dir, $global, $arch) {
 
 function rm_shim($name, $shimdir, $app) {
     '', '.shim', '.cmd', '.ps1' | ForEach-Object {
-        $shimPath = "$shimdir\$name$_"
+        $shimPath = Join-Path $shimdir $name$_
         $altShimPath = "$shimPath.$app"
         if ($app -and (Test-Path -Path $altShimPath -PathType Leaf)) {
             Write-Output "Removing shim '$name$_.$app'."
@@ -883,7 +883,7 @@ function rm_shim($name, $shimdir, $app) {
             if ($null -eq $oldShims) {
                 if ($_ -eq '.shim') {
                     Write-Output "Removing shim '$name.exe'."
-                    Remove-Item -Path "$shimdir\$name.exe"
+                    Remove-Item -Path $(Join-Path $shimdir "$name.exe")
                 }
             } else {
                 (@($oldShims) | Sort-Object -Property LastWriteTimeUtc)[-1] | Rename-Item -NewName { $_.Name -replace '\.[^.]*$', '' }
@@ -903,6 +903,14 @@ function rm_shims($app, $manifest, $global, $arch) {
     }
 }
 
+function link_attrib($path, $attribute) {
+    if ($is_wsl) {
+        cmd.exe /s /c "attrib $(win_path $path) $attribute /L"
+    } else {
+        attrib $path $attribute /L
+    }
+}
+
 # Creates or updates the directory junction for [app]/current,
 # pointing to the specified version directory for the app.
 #
@@ -911,7 +919,7 @@ function rm_shims($app, $manifest, $global, $arch) {
 function link_current($versiondir) {
     if (get_config NO_JUNCTIONS) { return $versiondir.ToString() }
 
-    $currentdir = "$(Split-Path $versiondir)\current"
+    $currentdir = Join-Path $(Split-Path $versiondir) "current"
 
     Write-Host "Linking $(friendly_path $currentdir) => $(friendly_path $versiondir)"
 
@@ -921,12 +929,12 @@ function link_current($versiondir) {
 
     if (Test-Path $currentdir) {
         # remove the junction
-        attrib -R /L $currentdir
+        link_attrib $currentdir -R
         Remove-Item $currentdir -Recurse -Force -ErrorAction Stop
     }
 
     New-DirectoryJunction $currentdir $versiondir | Out-Null
-    attrib $currentdir +R /L
+    link_attrib $currentdir +R
     return $currentdir
 }
 
@@ -937,13 +945,13 @@ function link_current($versiondir) {
 # otherwise the normal version directory.
 function unlink_current($versiondir) {
     if (get_config NO_JUNCTIONS) { return $versiondir.ToString() }
-    $currentdir = "$(Split-Path $versiondir)\current"
+    $currentdir = Join-Path $(Split-Path $versiondir) "current"
 
     if (Test-Path $currentdir) {
         Write-Host "Unlinking $(friendly_path $currentdir)"
 
         # remove read-only attribute on link
-        attrib $currentdir -R /L
+        link_attrib $currentdir -R
 
         # remove the junction
         Remove-Item $currentdir -Recurse -Force -ErrorAction Stop
@@ -1088,10 +1096,10 @@ function ensure_none_failed($apps) {
             if (failed $app $global) {
                 if (installed $app $global) {
                     info "Repair previous failed installation of $app."
-                    & "$PSScriptRoot\..\libexec\scoop-reset.ps1" $app$(if ($global) { ' --global' })
+                    & $(Join-Path $PSScriptRoot ".." "libexec" "scoop-reset.ps1") $app$(if ($global) { ' --global' })
                 } else {
                     warn "Purging previous failed installation of $app."
-                    & "$PSScriptRoot\..\libexec\scoop-uninstall.ps1" $app$(if ($global) { ' --global' })
+                    & $(Join-Path $PSScriptRoot ".." "libexec" "scoop-uninstall.ps1") $app$(if ($global) { ' --global' })
                 }
             }
         }
@@ -1156,8 +1164,8 @@ function persist_data($manifest, $original_dir, $persist_dir) {
 
             $source = $source.TrimEnd("/").TrimEnd("\\")
 
-            $source = fullpath "$dir\$source"
-            $target = fullpath "$persist_dir\$target"
+            $source = fullpath $(Join-Path $dir $source)
+            $target = fullpath $(Join-Path $persist_dir $target)
 
             # if we have had persist data in the store, just create link and go
             if (Test-Path $target) {
@@ -1183,7 +1191,7 @@ function persist_data($manifest, $original_dir, $persist_dir) {
             if (is_directory $target) {
                 # target is a directory, create junction
                 New-DirectoryJunction $source $target | Out-Null
-                attrib $source +R /L
+                link_attrib $source +R
             } else {
                 # target is a file, create hard link
                 New-Item -Path $source -ItemType HardLink -Value $target | Out-Null
@@ -1198,13 +1206,13 @@ function unlink_persist_data($manifest, $dir) {
     if ($persist) {
         @($persist) | ForEach-Object {
             $source, $null = persist_def $_
-            $source = Get-Item "$dir\$source"
+            $source = Get-Item $(Join-Path $dir $source)
             if ($source.LinkType) {
                 $source_path = $source.FullName
                 # directory (junction)
                 if ($source -is [System.IO.DirectoryInfo]) {
                     # remove read-only attribute on the link
-                    attrib -R /L $source_path
+                    link_attrib $source_path -R
                     # remove the junction
                     Remove-Item -Path $source_path -Recurse -Force -ErrorAction SilentlyContinue
                 } else {
@@ -1246,11 +1254,23 @@ function test_running_process($app, $global) {
     }
 }
 
+function win_path($path) {
+    $win_path = $(wslpath -w $path) 2> $NULL
+    if ($LASTEXITCODE -eq 0) {
+        return $win_path
+    } else {
+        return "$(win_path $(Split-Path $path))\$(Split-Path -Leaf $path)"
+    }
+}
+
 # wrapper function to create junction links
 # Required to handle docker/for-win#12240
 function New-DirectoryJunction($source, $target) {
+    if ($is_wsl) {
+        powershell.exe -c "New-Item -Path `'$(win_path $source)`' -ItemType Junction -Value `'$(win_path $target)`'"
+    }
     # test if this script is being executed inside a docker container
-    if (Get-Service -Name cexecsvc -ErrorAction SilentlyContinue) {
+    elseif (Get-Service -Name cexecsvc -ErrorAction SilentlyContinue) {
         cmd.exe /d /c "mklink /j `"$source`" `"$target`""
     } else {
         New-Item -Path $source -ItemType Junction -Value $target

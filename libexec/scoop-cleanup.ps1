@@ -30,7 +30,7 @@ if ($global -and !(is_admin)) {
 function cleanup($app, $global, $verbose, $cache) {
     $current_version = Select-CurrentVersion -AppName $app -Global:$global
     if ($cache) {
-        Remove-Item "$cachedir\$app#*" -Exclude "$app#$current_version#*"
+        Remove-Item $(Join-Path $cachedir "$app#*") -Exclude "$app#$current_version#*"
     }
     $appDir = appdir $app $global
     $versions = Get-ChildItem $appDir -Name
@@ -51,7 +51,7 @@ function cleanup($app, $global, $verbose, $cache) {
     }
     $leftVersions = Get-ChildItem $appDir
     if ($leftVersions.Length -eq 1 -and $leftVersions.Name -eq 'current' -and $leftVersions.LinkType) {
-        attrib $leftVersions.FullName -R /L
+        link_attrib $leftVersions.FullName -R
         Remove-Item $leftVersions.FullName -ErrorAction Stop -Force
         $leftVersions = $null
     }
@@ -77,7 +77,7 @@ if ($apps -or $all) {
     $apps | ForEach-Object { cleanup @_ $verbose $cache }
 
     if ($cache) {
-        Remove-Item "$cachedir\*.download" -ErrorAction Ignore
+        Remove-Item $(Join-Path $cachedir "*.download") -ErrorAction Ignore
     }
 
     if (!$verbose) {

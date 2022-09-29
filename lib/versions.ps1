@@ -49,9 +49,9 @@ function Select-CurrentVersion { # 'manifest.ps1'
         $Global
     )
     process {
-        $currentPath = "$(appdir $AppName $Global)\current"
+        $currentPath = Join-Path $(appdir $AppName $Global) "current"
         if (!(get_config NO_JUNCTIONS)) {
-            $currentVersion = (parse_json "$currentPath\manifest.json").version
+            $currentVersion = (parse_json $(Join-Path $currentPath "manifest.json")).version
             if ($currentVersion -eq 'nightly') {
                 $currentVersion = (Get-Item $currentPath).Target | Split-Path -Leaf
             }
@@ -94,7 +94,7 @@ function Get-InstalledVersion {
     process {
         $appPath = appdir $AppName $Global
         if (Test-Path $appPath) {
-            $versions = @((Get-ChildItem "$appPath\*\install.json" | Sort-Object -Property LastWriteTimeUtc).Directory.Name)
+            $versions = @((Get-ChildItem $(Join-Path $appPath "*" "install.json") | Sort-Object -Property LastWriteTimeUtc).Directory.Name)
             return $versions | Where-Object { ($_ -ne 'current') -and ($_ -notlike '_*.old*') }
         } else {
             return @()

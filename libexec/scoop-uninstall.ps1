@@ -115,7 +115,7 @@ if (!$apps) { exit 0 }
         }
     }
     if (Test-Path ($currentDir = Join-Path $appDir 'current')) {
-        attrib $currentDir -R /L
+        link_attrib $currentDir -R
         Remove-Item $currentDir -ErrorAction Stop -Force
     }
     if (!(Get-ChildItem $appDir)) {
