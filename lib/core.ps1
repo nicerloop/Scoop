@@ -868,11 +868,20 @@ function search_in_path($target) {
 function ensure_in_path($dir, $global) {
     $path = env 'PATH' $global
     $dir = fullpath $dir
+    if ($is_wsl) {
+        $dir = win_path $dir
+    }
     if($path -notmatch [regex]::escape($dir)) {
         write-output "Adding $(friendly_path $dir) to $(if($global){'global'}else{'your'}) path."
 
         env 'PATH' $global "$dir;$path" # for future sessions...
-        $env:PATH = "$dir;$env:PATH" # for this session
+        if ($is_wsl) {
+            $dir = wslpath -u $dir
+            $env:PATH = "${dir}:$env:PATH" # for this session
+
+        } else {
+            $env:PATH = "$dir;$env:PATH" # for this session
+        }
     }
 }
 
