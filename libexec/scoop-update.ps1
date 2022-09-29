@@ -150,7 +150,7 @@ function update_scoop() {
     #     add_bucket 'main'
     # }
 
-    shim $(Join-Path $currentdir "bin" "scoop.ps1") $false
+    # shim $(Join-Path $currentdir "bin" "scoop.ps1") $false
 
     foreach ($bucket in Get-LocalBucket) {
         Write-Host "Updating '$bucket' bucket..."
