@@ -137,6 +137,10 @@ function update_scoop() {
         if ($res -ne 0) {
             abort 'Update failed.'
         }
+
+        if ($is_wsl) {
+            $currentdir = wslpath -u $currentdir
+        }
     }
 
     # This should have been deprecated after 2019-05-12
