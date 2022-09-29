@@ -65,7 +65,7 @@ function update_scoop() {
     $last_update = $last_update.ToString('s')
     $show_update_log = get_config 'show_update_log' $true
     $currentdir = fullpath $(versiondir 'scoop' 'current')
-    if (!(Test-Path $(Join-Path $currentdir ".git")) {
+    if (!(Test-Path $(Join-Path $currentdir ".git"))) {
         $newdir = Join-Path $currentdir ".." "new"
         $olddir = Join-Path $currentdir ".." "old"
 
@@ -88,7 +88,7 @@ function update_scoop() {
         }
     } else {
         if (Test-Path $(Join-Path $currentdir ".." "old")) {
-            Remove-Item $(Join-Path $currentdir ".." "old" -Recurse -Force -ErrorAction SilentlyContinue
+            Remove-Item $(Join-Path $currentdir ".." "old") -Recurse -Force -ErrorAction SilentlyContinue
         }
 
         $previousCommit = git -C "$currentdir" rev-parse HEAD
