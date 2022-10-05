@@ -39,7 +39,6 @@ function shortcut_folder($global) {
 }
 
 function startmenu_shortcut([System.IO.FileInfo] $target, $shortcutName, $arguments, [System.IO.FileInfo]$icon, $global) {
-    Write-host startmenu_shortcut $target, $shortcutName, $arguments, $icon, $global
     if(!$target.Exists) {
         Write-Host -f DarkRed "Creating shortcut for $shortcutName ($(fname $target)) failed: Couldn't find $target"
         return
