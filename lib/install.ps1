@@ -1029,7 +1029,7 @@ function env_set($manifest, $dir, $global, $arch) {
         $env_set | Get-Member -Member NoteProperty | ForEach-Object {
             $name = $_.name;
             $val = format $env_set.$($_.name) @{ "dir" = $dir }
-            env $name $global $val
+            env $name $global $(win_path $val)
             Set-Content env:\$name $val
         }
     }
