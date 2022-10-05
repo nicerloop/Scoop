@@ -59,6 +59,9 @@ function load_cfg($file) {
 }
 
 function get_config($name, $default) {
+    if ($is_wsl -and 'NO_JUNCTIONS' -eq $name) {
+        return 'true';
+    }
     if($null -eq $scoopConfig.$name -and $null -ne $default) {
         return $default
     }
@@ -957,6 +960,7 @@ function add_first_in_path($dir, $global) {
 
 function remove_from_path($dir, $global) {
     $dir = fullpath $dir
+    $dir = win_path $dir
 
     # future sessions
     $was_in_path, $newpath = strip_path (env 'path' $global) $dir
