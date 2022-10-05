@@ -31,9 +31,6 @@ function Expand-7zipArchive {
     if ($is_wsl) {
         $Path = win_path $Path
         $DestinationPath = win_path $DestinationPath
-        if ($ExtractDir) {
-            $ExtractDir = win_path $ExtractDir
-        }
     }
     $ArgList = @('x', $Path, "-o$DestinationPath", '-y')
     $IsTar = ((strip_ext $Path) -match '\.tar$') -or ($Path -match '\.t[abgpx]z2?$')
@@ -51,6 +48,9 @@ function Expand-7zipArchive {
     $Status = Invoke-ExternalCommand $7zPath $ArgList -LogPath $LogPath
     if (!$Status) {
         abort "Failed to extract files from $Path.`nLog file:`n  $(friendly_path $LogPath)`n$(new_issue_msg $app $bucket 'decompress error')"
+    }
+    if ($is_wsl) {
+        $DestinationPath = wslpath -u $DestinationPath
     }
     if (!$IsTar -and $ExtractDir) {
         movedir $(Join-Path $DestinationPath $ExtractDir) $DestinationPath | Out-Null
