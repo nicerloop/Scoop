@@ -907,7 +907,7 @@ function rm_shims($app, $manifest, $global, $arch) {
 
 function link_attrib($path, $attribute) {
     if ($is_wsl) {
-        cmd.exe /s /c "attrib $(win_path $path) $attribute /L"
+        cmd.exe /s /c "attrib $(win_path $path) $attribute /L"  | Out-Null
     } else {
         attrib $path $attribute /L
     }
