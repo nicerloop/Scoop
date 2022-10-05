@@ -944,6 +944,7 @@ function strip_path($orig_path, $dir) {
 
 function add_first_in_path($dir, $global) {
     $dir = fullpath $dir
+    $dir = win_path $dir
 
     # future sessions
     $null, $currpath = strip_path (env 'path' $global) $dir

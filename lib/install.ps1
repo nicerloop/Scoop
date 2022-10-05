@@ -630,10 +630,10 @@ function cookie_header($cookies) {
 }
 
 function is_in_dir($dir, $check) {
-    $check = win_path $check
-    $dir = win_path $dir
     $check = "$(fullpath $check)"
     $dir = "$(fullpath $dir)"
+    $check = win_path $check
+    $dir = win_path $dir
     $check -match "^$([regex]::escape("$dir"))(\\|`$)"
 }
 
