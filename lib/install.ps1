@@ -234,7 +234,7 @@ function Invoke-CachedAria2Download ($app, $version, $manifest, $architecture, $
 
     foreach ($url in $urls) {
         $data.$url = @{
-            'target'    = "$dir\$(url_filename $url)"
+            'target'    = "$dir/$(url_filename $url)"
             'cachename' = fname (cache_path $app $version $url)
             'source'    = fullpath (cache_path $app $version $url)
         }
@@ -551,7 +551,7 @@ function Invoke-ScoopDownload ($app, $version, $manifest, $bucket, $architecture
             $fname = url_filename $url
 
             try {
-                Invoke-CachedDownload $app $version $url "$dir\$fname" $cookies $use_cache
+                Invoke-CachedDownload $app $version $url "$dir/$fname" $cookies $use_cache
             } catch {
                 write-host -f darkred $_
                 abort "URL $url is not valid"
@@ -559,7 +559,7 @@ function Invoke-ScoopDownload ($app, $version, $manifest, $bucket, $architecture
 
             if($check_hash) {
                 $manifest_hash = hash_for_url $manifest $url $architecture
-                $ok, $err = check_hash "$dir\$fname" $manifest_hash $(show_app $app $bucket)
+                $ok, $err = check_hash "$dir/$fname" $manifest_hash $(show_app $app $bucket)
                 if(!$ok) {
                     error $err
                     $cached = cache_path $app $version $url
@@ -610,7 +610,7 @@ function Invoke-ScoopDownload ($app, $version, $manifest, $bucket, $architecture
             Write-Host "Extracting " -NoNewline
             Write-Host $fname -f Cyan -NoNewline
             Write-Host " ... " -NoNewline
-            & $extract_fn -Path "$dir\$fname" -DestinationPath "$dir\$extract_to" -ExtractDir $extract_dir -Removal
+            & $extract_fn -Path "$dir/$fname" -DestinationPath "$dir/$extract_to" -ExtractDir $extract_dir -Removal
             Write-Host "done." -f Green
             $extracted++
         }
@@ -756,7 +756,7 @@ function msi_installed($code) {
 }
 
 function install_prog($fname, $dir, $installer, $global) {
-    $prog = "$dir\$(coalesce $installer.file "$fname")"
+    $prog = "$dir/$(coalesce $installer.file "$fname")"
     if(!(is_in_dir $dir $prog)) {
         abort "Error in manifest: Installer $prog is outside the app directory."
     }
@@ -803,7 +803,7 @@ function run_uninstaller($manifest, $architecture, $dir) {
             $continue_exit_codes.1605 = 'not installed, skipping'
             $continue_exit_codes.3010 = 'restart required'
         } elseif($uninstaller) {
-            $exe = "$dir\$($uninstaller.file)"
+            $exe = "$dir/$($uninstaller.file)"
             $arg = args $uninstaller.args
             if(!(is_in_dir $dir $exe)) {
                 warn "Error in manifest: Installer $exe is outside the app directory, skipping."
@@ -837,8 +837,8 @@ function create_shims($manifest, $dir, $global, $arch) {
         $target, $name, $arg = shim_def $_
         write-output "Creating shim for '$name'."
 
-        if(test-path "$dir\$target" -pathType leaf) {
-            $bin = "$dir\$target"
+        if(test-path "$dir/$target" -pathType leaf) {
+            $bin = "$dir/$target"
         } elseif(test-path $target -pathType leaf) {
             $bin = $target
         } else {
@@ -852,7 +852,8 @@ function create_shims($manifest, $dir, $global, $arch) {
 
 function rm_shim($name, $shimdir, $app) {
     '', '.shim', '.cmd', '.ps1' | ForEach-Object {
-        $shimPath = "$shimdir\$name$_"
+        $name = $name.tolower()
+        $shimPath = "$shimdir/$name$_"
         $altShimPath = "$shimPath.$app"
         if ($app -and (Test-Path -Path $altShimPath -PathType Leaf)) {
             Write-Output "Removing shim '$name$_.$app'."
@@ -860,11 +861,11 @@ function rm_shim($name, $shimdir, $app) {
         } elseif (Test-Path -Path $shimPath -PathType Leaf) {
             Write-Output "Removing shim '$name$_'."
             Remove-Item $shimPath
-            $oldShims = Get-Item -Path "$shimPath.*" -Exclude '*.shim', '*.cmd', '*.ps1'
+            $oldShims = Get-Item -Path "$shimPath.*" -Exclude '*.shim', '*.exe', '*.cmd', '*.ps1'
             if ($null -eq $oldShims) {
                 if ($_ -eq '.shim') {
                     Write-Output "Removing shim '$name.exe'."
-                    Remove-Item -Path "$shimdir\$name.exe"
+                    Remove-Item -Path "$shimdir/$name.exe"
                 }
             } else {
                 (@($oldShims) | Sort-Object -Property LastWriteTimeUtc)[-1] | Rename-Item -NewName { $_.Name -replace '\.[^.]*$', '' }
@@ -892,7 +893,7 @@ function rm_shims($app, $manifest, $global, $arch) {
 function link_current($versiondir) {
     if (get_config NO_JUNCTION) { return $versiondir.ToString() }
 
-    $currentdir = "$(Split-Path $versiondir)\current"
+    $currentdir = "$(Split-Path $versiondir)/current"
 
     Write-Host "Linking $(friendly_path $currentdir) => $(friendly_path $versiondir)"
 
@@ -907,7 +908,7 @@ function link_current($versiondir) {
     }
 
     New-DirectoryJunction $currentdir $versiondir | Out-Null
-    attrib $currentdir +R /L
+    if (Test-CommandAvailable('attrib')) { attrib $currentdir +R /L }
     return $currentdir
 }
 
@@ -918,13 +919,13 @@ function link_current($versiondir) {
 # otherwise the normal version directory.
 function unlink_current($versiondir) {
     if (get_config NO_JUNCTION) { return $versiondir.ToString() }
-    $currentdir = "$(Split-Path $versiondir)\current"
+    $currentdir = "$(Split-Path $versiondir)/current"
 
     if (Test-Path $currentdir) {
         Write-Host "Unlinking $(friendly_path $currentdir)"
 
         # remove read-only attribute on link
-        attrib $currentdir -R /L
+        if (Test-CommandAvailable('attrib')) { attrib $currentdir -R /L }
 
         # remove the junction
         Remove-Item $currentdir -Recurse -Force -ErrorAction Stop
@@ -935,16 +936,16 @@ function unlink_current($versiondir) {
 
 # to undo after installers add to path so that scoop manifest can keep track of this instead
 function ensure_install_dir_not_in_path($dir, $global) {
-    $path = (env 'path' $global)
+    $path = (env 'PATH' $global)
 
     $fixed, $removed = find_dir_or_subdir $path "$dir"
     if($removed) {
         $removed | ForEach-Object { "Installer added '$(friendly_path $_)' to path. Removing."}
-        env 'path' $global $fixed
+        env 'PATH' $global $fixed
     }
 
     if(!$global) {
-        $fixed, $removed = find_dir_or_subdir (env 'path' $true) "$dir"
+        $fixed, $removed = find_dir_or_subdir (env 'PATH' $true) "$dir"
         if($removed) {
             $removed | ForEach-Object { warn "Installer added '$_' to system path. You might want to remove this manually (requires admin permission)."}
         }
@@ -952,21 +953,22 @@ function ensure_install_dir_not_in_path($dir, $global) {
 }
 
 function find_dir_or_subdir($path, $dir) {
-    $dir = $dir.trimend('\')
+    $dir = $dir.trimend('/')
     $fixed = @()
     $removed = @()
-    $path.split(';') | ForEach-Object {
+    $pathSep = [IO.Path]::PathSeparator
+    $path.split($pathSep) | ForEach-Object {
         if($_) {
-            if(($_ -eq $dir) -or ($_ -like "$dir\*")) { $removed += $_ }
+            if(($_ -eq $dir) -or ($_ -like "$dir/*")) { $removed += $_ }
             else { $fixed += $_ }
         }
     }
-    return [string]::join(';', $fixed), $removed
+    return [string]::join($pathSep, $fixed), $removed
 }
 
 function env_add_path($manifest, $dir, $global, $arch) {
     $env_add_path = arch_specific 'env_add_path' $manifest $arch
-    $dir = $dir.TrimEnd('\')
+    $dir = $dir.TrimEnd('/')
     if ($env_add_path) {
         # GH-3785: Add path in ascending order.
         [Array]::Reverse($env_add_path)
@@ -1069,10 +1071,10 @@ function ensure_none_failed($apps) {
             if (failed $app $global) {
                 if (installed $app $global) {
                     info "Repair previous failed installation of $app."
-                    & "$PSScriptRoot\..\libexec\scoop-reset.ps1" $app$(if ($global) { ' --global' })
+                    & "$PSScriptRoot/../libexec/scoop-reset.ps1" $app$(if ($global) { ' --global' })
                 } else {
                     warn "Purging previous failed installation of $app."
-                    & "$PSScriptRoot\..\libexec\scoop-uninstall.ps1" $app$(if ($global) { ' --global' })
+                    & "$PSScriptRoot/../libexec/scoop-uninstall.ps1" $app$(if ($global) { ' --global' })
                 }
             }
         }
@@ -1137,8 +1139,8 @@ function persist_data($manifest, $original_dir, $persist_dir) {
 
             $source = $source.TrimEnd("/").TrimEnd("\\")
 
-            $source = fullpath "$dir\$source"
-            $target = fullpath "$persist_dir\$target"
+            $source = fullpath "$dir/$source"
+            $target = fullpath "$persist_dir/$target"
 
             # if we have had persist data in the store, just create link and go
             if (Test-Path $target) {
@@ -1179,7 +1181,7 @@ function unlink_persist_data($manifest, $dir) {
     if ($persist) {
         @($persist) | ForEach-Object {
             $source, $null = persist_def $_
-            $source = Get-Item "$dir\$source"
+            $source = Get-Item "$dir/$source"
             if ($source.LinkType) {
                 $source_path = $source.FullName
                 # directory (junction)
@@ -1212,7 +1214,7 @@ function persist_permission($manifest, $global) {
 # test if there are running processes
 function test_running_process($app, $global) {
     $processdir = appdir $app $global | Convert-Path
-    $running_processes = Get-Process | Where-Object { $_.Path -like "$processdir\*" } | Out-String
+    $running_processes = Get-Process | Where-Object { $_.Path -like "$processdir/*" } | Out-String
 
     if ($running_processes) {
         if (get_config IGNORE_RUNNING_PROCESSES) {
@@ -1232,8 +1234,10 @@ function test_running_process($app, $global) {
 # wrapper function to create junction links
 # Required to handle docker/for-win#12240
 function New-DirectoryJunction($source, $target) {
+    if (Test-CommandAvailable('ln')) {
+        ln -s $target $source
     # test if this script is being executed inside a docker container
-    if (Get-Service -Name cexecsvc -ErrorAction SilentlyContinue) {
+    } elseif (Get-Service -Name cexecsvc -ErrorAction SilentlyContinue) {
         cmd.exe /d /c "mklink /j `"$source`" `"$target`""
     } else {
         New-Item -Path $source -ItemType Junction -Value $target

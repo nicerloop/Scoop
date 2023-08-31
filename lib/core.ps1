@@ -134,7 +134,11 @@ function git_cmd {
     if ($proxy -and $proxy -ne 'none') {
         $cmd = "SET HTTPS_PROXY=$proxy&&SET HTTP_PROXY=$proxy&&$cmd"
     }
-    cmd.exe /d /c $cmd
+    if (Test-CommandAvailable('cmd.exe')) {
+        cmd.exe /d /c $cmd
+    } else {
+        sh -c $cmd
+    }
 }
 
 # helper functions
@@ -207,10 +211,10 @@ function filesize($length) {
 
 # dirs
 function basedir($global) { if($global) { return $globaldir } $scoopdir }
-function appsdir($global) { "$(basedir $global)\apps" }
-function shimdir($global) { "$(basedir $global)\shims" }
-function appdir($app, $global) { "$(appsdir $global)\$app" }
-function versiondir($app, $version, $global) { "$(appdir $app $global)\$version" }
+function appsdir($global) { "$(basedir $global)/apps" }
+function shimdir($global) { "$(basedir $global)/shims" }
+function appdir($app, $global) { "$(appsdir $global)/$app" }
+function versiondir($app, $version, $global) { "$(appdir $app $global)/$version" }
 
 function currentdir($app, $global) {
     if (get_config NO_JUNCTION) {
@@ -218,13 +222,13 @@ function currentdir($app, $global) {
     } else {
         $version = 'current'
     }
-    "$(appdir $app $global)\$version"
+    "$(appdir $app $global)/$version"
 }
 
-function persistdir($app, $global) { "$(basedir $global)\persist\$app" }
-function usermanifestsdir { "$(basedir)\workspace" }
-function usermanifest($app) { "$(usermanifestsdir)\$app.json" }
-function cache_path($app, $version, $url) { "$cachedir\$app#$version#$($url -replace '[^\w\.\-]+', '_')" }
+function persistdir($app, $global) { "$(basedir $global)/persist/$app" }
+function usermanifestsdir { "$(basedir)/workspace" }
+function usermanifest($app) { "$(usermanifestsdir)/$app.json" }
+function cache_path($app, $version, $url) { "$cachedir/$app#$version#$($url -replace '[^\w\.\-]+', '_')" }
 
 # apps
 function sanitary_path($path) { return [regex]::replace($path, "[/\\?:*<>|]", "") }
@@ -249,7 +253,7 @@ function installed_apps($global) {
 function failed($app, $global) {
     $app = ($app -split '/|\\')[-1]
     $appPath = appdir $app $global
-    $hasCurrent = (get_config NO_JUNCTION) -or (Test-Path "$appPath\current")
+    $hasCurrent = (get_config NO_JUNCTION) -or (Test-Path "$appPath/current")
     return (Test-Path $appPath) -and !($hasCurrent -and (installed $app $global))
 }
 
@@ -271,13 +275,13 @@ function Get-AppFilePath {
     )
 
     # normal path to file
-    $Path = "$(currentdir $App $false)\$File"
+    $Path = "$(currentdir $App $false)/$File"
     if (Test-Path $Path) {
         return $Path
     }
 
     # global path to file
-    $Path = "$(currentdir $App $true)\$File"
+    $Path = "$(currentdir $App $true)/$File"
     if (Test-Path $Path) {
         return $Path
     }
@@ -462,9 +466,9 @@ function fullpath($path) {
     $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($path)
 }
 function friendly_path($path) {
-    $h = (Get-PsProvider 'FileSystem').home; if(!$h.endswith('\')) { $h += '\' }
-    if($h -eq '\') { return $path }
-    return "$path" -replace ([regex]::escape($h)), "~\"
+    $h = (Get-PsProvider 'FileSystem').home; if(!$h.endswith('/')) { $h += '/' }
+    if($h -eq '/') { return $path }
+    return "$path" -replace ([regex]::escape($h)), "~/"
 }
 function is_local($path) {
     ($path -notmatch '^https?://') -and (test-path $path)
@@ -590,6 +594,7 @@ function Invoke-ExternalCommand {
 
 function env($name,$global,$val='__get') {
     $target = 'User'; if($global) {$target = 'Machine'}
+    if ($IsMacOS) {$target = 'Process'}
     if($val -eq '__get') { [environment]::getEnvironmentVariable($name,$target) }
     else { [environment]::setEnvironmentVariable($name,$val,$target) }
 }
@@ -619,9 +624,13 @@ function is_directory([String] $path) {
 }
 
 function movedir($from, $to) {
-    $from = $from.trimend('\')
-    $to = $to.trimend('\')
+    $from = $from.trimend('/')
+    $to = $to.trimend('/')
 
+    if ($IsMacOS) {
+        rsync -a "$from/" "$to"
+        return
+    }
     $proc = New-Object System.Diagnostics.Process
     $proc.StartInfo.FileName = 'robocopy.exe'
     $proc.StartInfo.Arguments = "`"$from`" `"$to`" /e /move"
@@ -704,7 +713,7 @@ function shim($path, $global, $name, $arg) {
     ensure_in_path $abs_shimdir $global
     if (!$name) { $name = strip_ext (fname $path) }
 
-    $shim = "$abs_shimdir\$($name.tolower())"
+    $shim = "$abs_shimdir/$($name.tolower())"
 
     # convert to relative path
     Push-Location $abs_shimdir
@@ -719,6 +728,15 @@ function shim($path, $global, $name, $arg) {
         Write-Output "path = `"$resolved_path`"" | Out-UTF8File "$shim.shim"
         if ($arg) {
             Write-Output "args = $arg" | Out-UTF8File "$shim.shim" -Append
+        }
+        if ($IsMacOS) {
+        warn_on_overwrite $shim $path
+        @(
+            "#!/bin/sh",
+            "# $resolved_path",
+            "wine `"$resolved_path`" $arg `"$@`""
+        ) -join "`n" | Out-UTF8File $shim -NoNewLine
+        chmod +x $shim
         }
     } elseif ($path -match '\.(bat|cmd)$') {
         # shim .bat, .cmd so they can be used by programs with no awareness of PSH
@@ -830,11 +848,11 @@ function shim($path, $global, $name, $arg) {
 }
 
 function get_shim_path() {
-    $shim_path = "$(versiondir 'scoop' 'current')\supporting\shims\kiennq\shim.exe"
+    $shim_path = "$(versiondir 'scoop' 'current')/supporting/shims/kiennq/shim.exe"
     $shim_version = get_config SHIM 'default'
     switch ($shim_version) {
-        '71' { $shim_path = "$(versiondir 'scoop' 'current')\supporting\shims\71\shim.exe"; Break }
-        'scoopcs' { $shim_path = "$(versiondir 'scoop' 'current')\supporting\shimexe\bin\shim.exe"; Break }
+        '71' { $shim_path = "$(versiondir 'scoop' 'current')/supporting/shims/71/shim.exe"; Break }
+        'scoopcs' { $shim_path = "$(versiondir 'scoop' 'current')/supporting/shimexe/bin/shim.exe"; Break }
         'kiennq' { Break } # for backward compatibility
         'default' { Break }
         default { warn "Unknown shim version: '$shim_version'" }
@@ -845,8 +863,8 @@ function get_shim_path() {
 function search_in_path($target) {
     $path = (env 'PATH' $false) + ";" + (env 'PATH' $true)
     foreach($dir in $path.split(';')) {
-        if(test-path "$dir\$target" -pathType leaf) {
-            return "$dir\$target"
+        if(test-path "$dir/$target" -pathType leaf) {
+            return "$dir/$target"
         }
     }
 }
@@ -971,7 +989,7 @@ function remove_from_path($dir, $global) {
 
 function ensure_robocopy_in_path {
     if(!(Test-CommandAvailable robocopy)) {
-        shim "C:\Windows\System32\Robocopy.exe" $false
+        shim "C:/Windows/System32/Robocopy.exe" $false
     }
 }
 
@@ -1216,13 +1234,18 @@ function Out-UTF8File {
 # Core Bootstrap #
 ##################
 
+if (($PSVersionTable.PSVersion.Major) -lt 6) {
+    $IsWindows = True
+    $IsMacOS = $IsLinux = False
+}
+
 # Note: Github disabled TLS 1.0 support on 2018-02-23. Need to enable TLS 1.2
 #       for all communication with api.github.com
 Optimize-SecurityProtocol
 
 # Load Scoop config
-$configHome = $env:XDG_CONFIG_HOME, "$env:USERPROFILE\.config" | Select-Object -First 1
-$configFile = "$configHome\scoop\config.json"
+$configHome = $env:XDG_CONFIG_HOME, "$env:USERPROFILE/.config" | Select-Object -First 1
+$configFile = "$configHome/scoop/config.json"
 $scoopConfig = load_cfg $configFile
 
 # NOTE Scoop config file migration. Remove this after 2023/6/30
@@ -1256,17 +1279,17 @@ if ($scoopConfig) {
 # END NOTE
 
 # Scoop root directory
-$scoopdir = $env:SCOOP, (get_config ROOT_PATH), "$([System.Environment]::GetFolderPath('UserProfile'))\scoop" | Where-Object { -not [String]::IsNullOrEmpty($_) } | Select-Object -First 1
+$scoopdir = $env:SCOOP, (get_config ROOT_PATH), "$([System.Environment]::GetFolderPath('UserProfile'))/scoop" | Where-Object { -not [String]::IsNullOrEmpty($_) } | Select-Object -First 1
 
 # Scoop global apps directory
-$globaldir = $env:SCOOP_GLOBAL, (get_config GLOBAL_PATH), "$([System.Environment]::GetFolderPath('CommonApplicationData'))\scoop" | Where-Object { -not [String]::IsNullOrEmpty($_) } | Select-Object -First 1
+$globaldir = $env:SCOOP_GLOBAL, (get_config GLOBAL_PATH), "$([System.Environment]::GetFolderPath('CommonApplicationData'))/scoop" | Where-Object { -not [String]::IsNullOrEmpty($_) } | Select-Object -First 1
 
 # Scoop cache directory
 # Note: Setting the SCOOP_CACHE environment variable to use a shared directory
 #       is experimental and untested. There may be concurrency issues when
 #       multiple users write and access cached files at the same time.
 #       Use at your own risk.
-$cachedir = $env:SCOOP_CACHE, (get_config CACHE_PATH), "$scoopdir\cache" | Where-Object { -not [String]::IsNullOrEmpty($_) } | Select-Object -First 1
+$cachedir = $env:SCOOP_CACHE, (get_config CACHE_PATH), "$scoopdir/cache" | Where-Object { -not [String]::IsNullOrEmpty($_) } | Select-Object -First 1
 
 # OS information
 $WindowsBuild = [System.Environment]::OSVersion.Version.Build
