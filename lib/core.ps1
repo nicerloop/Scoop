@@ -789,8 +789,8 @@ function shim($path, $global, $name, $arg) {
         @(
             "#!/bin/sh",
             "# $resolved_path",
-            "if command -v pwsh.exe > /dev/null 2>&1; then",
-            "    pwsh.exe -noprofile -ex unrestricted -file `"$resolved_path`" $arg `"$@`"",
+            "if command -v pwsh > /dev/null 2>&1; then",
+            "    pwsh -noprofile -ex unrestricted -file `"$resolved_path`" $arg `"$@`"",
             "else",
             "    powershell.exe -noprofile -ex unrestricted -file `"$resolved_path`" $arg `"$@`"",
             "fi"
