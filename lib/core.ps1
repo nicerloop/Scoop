@@ -594,7 +594,7 @@ function Invoke-ExternalCommand {
 
 function env($name,$global,$val='__get') {
     $target = 'User'; if($global) {$target = 'Machine'}
-    if ($IsMacOS) {$target = 'Process'}
+    if ($IsMacOS -Or $IsLinux) {$target = 'Process'}
     if($val -eq '__get') { [environment]::getEnvironmentVariable($name,$target) }
     else { [environment]::setEnvironmentVariable($name,$val,$target) }
 }
@@ -627,7 +627,7 @@ function movedir($from, $to) {
     $from = $from.trimend('/')
     $to = $to.trimend('/')
 
-    if ($IsMacOS) {
+    if ($IsMacOS -Or $IsLinux) {
         rsync -a "$from/" "$to"
         return
     }
@@ -729,7 +729,7 @@ function shim($path, $global, $name, $arg) {
         if ($arg) {
             Write-Output "args = $arg" | Out-UTF8File "$shim.shim" -Append
         }
-        if ($IsMacOS) {
+        if ($IsMacOS -Or $IsLinux) {
         warn_on_overwrite $shim $path
         @(
             "#!/bin/sh",
@@ -1235,8 +1235,8 @@ function Out-UTF8File {
 ##################
 
 if (($PSVersionTable.PSVersion.Major) -lt 6) {
-    $IsWindows = True
-    $IsMacOS = $IsLinux = False
+    $IsWindows = $true
+    $IsMacOS = $IsLinux = $false
 }
 
 # Note: Github disabled TLS 1.0 support on 2018-02-23. Need to enable TLS 1.2

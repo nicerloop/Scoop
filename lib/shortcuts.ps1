@@ -29,7 +29,7 @@ function shortcut_folder($global) {
 }
 
 function startmenu_shortcut([System.IO.FileInfo] $target, $shortcutName, $arguments, [System.IO.FileInfo]$icon, $global) {
-    if ($IsMacOS) { return }
+    if ($IsMacOS -Or $IsLinux) { return }
     if(!$target.Exists) {
         Write-Host -f DarkRed "Creating shortcut for $shortcutName ($(fname $target)) failed: Couldn't find $target"
         return
