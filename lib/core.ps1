@@ -1238,6 +1238,11 @@ if (($PSVersionTable.PSVersion.Major) -lt 6) {
     $IsWindows = $true
     $IsMacOS = $IsLinux = $false
 }
+if ($isMacOS) {
+    if (-not $env:XDG_CONFIG_HOME) {
+        $env:XDG_CONFIG_HOME = "$env:HOME/.config"
+    }
+}
 
 # Note: Github disabled TLS 1.0 support on 2018-02-23. Need to enable TLS 1.2
 #       for all communication with api.github.com
