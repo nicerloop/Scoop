@@ -57,3 +57,4 @@ iconutil --convert icns "work.iconset" --output "$destination"
 
 cd "$start_pwd" || exit 1
 rm -rf "$work_dir"
+
