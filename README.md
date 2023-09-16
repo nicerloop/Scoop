@@ -7,12 +7,13 @@ uses native tools from https://brew.sh:
 - icoutils
 - coreutils
 - msitools
-- p7zip
 
 currently, tested to install:
 - winmerge (zip)
 - 7zip (msi)
 - winget (7z)
+- innounp (rar)
+- xming (innosetup)
 
 - - -
 <p align="center">
