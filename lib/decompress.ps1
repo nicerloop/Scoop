@@ -147,7 +147,10 @@ function Expand-MsiArchive {
         $OriDestinationPath = $DestinationPath
         $DestinationPath = "$DestinationPath/_tmp"
     }
-    if ((get_config USE_LESSMSI)) {
+    if ($IsMacOS -Or $IsLinux) {
+        $MsiPath = 'msiextract'
+        $ArgList = @('--directory', $DestinationPath, $Path)
+    } elseif ((get_config USE_LESSMSI)) {
         $MsiPath = Get-HelperPath -Helper Lessmsi
         $ArgList = @('x', $Path, "$DestinationPath/")
     } else {
