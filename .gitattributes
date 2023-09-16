@@ -1,5 +1,5 @@
 # retain windows line-endings in case checked out on mac or linux
-*.sh eol=lf
+/supporting/ico2icns/ico2icns.sh eol=lf
 * text eol=crlf
 *.exe -text
 *.zip -text
