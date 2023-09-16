@@ -4,9 +4,14 @@
 source="$1"
 destination="$2"
 
-icotool --version | grep icoutils || ( fatal "missing icotool ( homebrew install icoutils )" )
-wrestool --version | grep icoutils || ( fatal "missing wrestool ( homebrew install icoutils )" )
-gsort --version | grep coreutils || ( fatal "missing gsort ( homebrew install coreutils )" )
+fatal(){
+  echo "$@" >&2
+  exit 1
+}
+
+icotool --version >/dev/null 2>&1 || ( fatal "missing icotool ( homebrew install icoutils )" )
+wrestool --version >/dev/null 2>&1 || ( fatal "missing wrestool ( homebrew install icoutils )" )
+gsort --version >/dev/null 2>&1 || ( fatal "missing gsort ( homebrew install coreutils )" )
 
 start_pwd=$(pwd)
 work_dir="$(mktemp -d)"
@@ -16,6 +21,10 @@ if [ "$(basename $source | rev | cut -d '.' -f 1 | rev)" = "exe" ]; then
     icon_name=$(wrestool -t 14 "$source" | head -n 1 | cut -d ' ' -f 2 | cut -d '=' -f 2)
     wrestool -x -t 14 -n "$icon_name" -o "work.ico" "$source"
     source="work.ico"
+fi
+
+if [ ! -f "$source" ]; then
+  fatal "No icon in source"
 fi
 
 mkdir "work.iconset"
@@ -39,7 +48,7 @@ do
     MULTIPLE_TGT="$PNG_DEPTH.$MULTIPLE_WIDTH.png"
     if [ ! -e "$MULTIPLE_TGT" ];
     then
-      sips -z $MULTIPLE_WIDTH $MULTIPLE_WIDTH "$f" --out "$MULTIPLE_TGT"
+      sips -z $MULTIPLE_WIDTH $MULTIPLE_WIDTH "$f" --out "$MULTIPLE_TGT" >/dev/null
     fi
   fi
 done
