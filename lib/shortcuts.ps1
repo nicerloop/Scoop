@@ -67,7 +67,6 @@ WINEPREFIX="$prefix" $wine "$fullName" "`$@" &
         $icns = "$app/Contents/Resources/$shortcutName.icns"
         $_ = ensure "$app/Contents/Resources/"
         $icoFullName = $icon.FullName 
-        Get-ChildItem -Path $scoopdir/apps/scoop/current/supporting/ico2icns -File -Recurse | % { $x = get-content -raw -path $_.fullname; $x -replace "`r`n","`n" | set-content -path $_.fullname }
         & $scoopdir/apps/scoop/current/supporting/ico2icns/ico2icns.sh $icoFullName $icns
         $bundleIdentifier = ( "wine.launcher.$shortcutName" | tr -C -d "A-Za-z0-9-." )
         $info = "$app/Contents/Info.plist"
