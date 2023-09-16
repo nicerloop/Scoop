@@ -509,6 +509,12 @@ function Invoke-ExternalCommand {
         [String]
         $LogPath
     )
+    if ($IsMacOS -Or $IsLinux) {
+        if (-Not ($FilePath -eq 'msiextract')) {
+            $ArgumentList = ,$FilePath + $ArgumentList
+            $FilePath = 'wine64'
+        }
+    }
     if ($Activity) {
         Write-Host "$Activity " -NoNewline
     }

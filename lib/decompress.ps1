@@ -18,7 +18,7 @@ function Expand-7zipArchive {
         [Switch]
         $Removal
     )
-    if ((get_config USE_EXTERNAL_7ZIP) -or ($IsMacOS -or $IsLinux)) {
+    if ((get_config USE_EXTERNAL_7ZIP)) {
         try {
             $7zPath = (Get-Command '7z' -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source
         } catch [System.Management.Automation.CommandNotFoundException] {
