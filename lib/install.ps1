@@ -1166,7 +1166,9 @@ function persist_data($manifest, $original_dir, $persist_dir) {
             if (is_directory $target) {
                 # target is a directory, create junction
                 New-DirectoryJunction $source $target | Out-Null
+                if ($IsWindows) {
                 attrib $source +R /L
+                }
             } else {
                 # target is a file, create hard link
                 New-Item -Path $source -ItemType HardLink -Value $target | Out-Null
@@ -1187,7 +1189,9 @@ function unlink_persist_data($manifest, $dir) {
                 # directory (junction)
                 if ($source -is [System.IO.DirectoryInfo]) {
                     # remove read-only attribute on the link
+                    if ($IsWindows) {
                     attrib -R /L $source_path
+                    }
                     # remove the junction
                     Remove-Item -Path $source_path -Recurse -Force -ErrorAction SilentlyContinue
                 } else {
