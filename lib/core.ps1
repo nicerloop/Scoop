@@ -628,7 +628,7 @@ function movedir($from, $to) {
     $to = $to.trimend('/')
 
     if ($IsMacOS -Or $IsLinux) {
-        rsync -a "$from/" "$to"
+        rsync -a "$from/".Replace("\","/") "$to"
         return
     }
     $proc = New-Object System.Diagnostics.Process
@@ -734,7 +734,7 @@ function shim($path, $global, $name, $arg) {
         @(
             "#!/bin/sh",
             "# $resolved_path",
-            "wine `"$resolved_path`" $arg `"$@`""
+            "wine64 `"$resolved_path`" $arg `"$@`""
         ) -join "`n" | Out-UTF8File $shim -NoNewLine
         chmod +x $shim
         }

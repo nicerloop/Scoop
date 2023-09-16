@@ -49,7 +49,7 @@ function startmenu_shortcut([System.IO.FileInfo] $target, $shortcutName, $argume
 
     if ($IsMacOS) {
         $app = "$scoop_startmenu_folder/$shortcutName.app"
-        $wine = Get-Command wine | Select-Object -ExpandProperty Definition
+        $wine = Get-Command wine64 | Select-Object -ExpandProperty Definition
         $prefix = "$env:HOME/.wine"
         $exeName = $target.Name
         $exe = "$app/Contents/MacOS/$exeName"
