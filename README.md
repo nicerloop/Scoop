@@ -1,3 +1,18 @@
+# macOS branch
+
+see https://github.com/nicerloop/ScoopInstall/tree/macos
+
+uses native tools from https://brew.sh:
+- gcenx/wine/wine-crossover
+- icoutils
+- coreutils
+- msitools
+
+currently, tested to install:
+- winmerge
+- 7zip
+
+- - -
 <p align="center">
 <!--<img src="scoop.png" alt="Long live Scoop!"/>-->
     <h1 align="center">Scoop</h1>
