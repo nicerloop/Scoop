@@ -11,7 +11,6 @@ fatal(){
 
 icotool --version >/dev/null 2>&1 || ( fatal "missing icotool ( homebrew install icoutils )" )
 wrestool --version >/dev/null 2>&1 || ( fatal "missing wrestool ( homebrew install icoutils )" )
-gsort --version >/dev/null 2>&1 || ( fatal "missing gsort ( homebrew install coreutils )" )
 
 start_pwd=$(pwd)
 work_dir="$(mktemp -d)"
@@ -48,21 +47,12 @@ do
     MULTIPLE_TGT="$PNG_DEPTH.$MULTIPLE_WIDTH.png"
     if [ ! -e "$MULTIPLE_TGT" ];
     then
-      sips -z $MULTIPLE_WIDTH $MULTIPLE_WIDTH "$f" --out "$MULTIPLE_TGT" >/dev/null
+      convert "$f" -resize "${MULTIPLE_WIDTH}x${MULTIPLE_WIDTH}" "$MULTIPLE_TGT" >/dev/null
     fi
   fi
 done
-# prepare for icns
-for f in $(ls . | gsort -V)
-do
-	PNG_WIDTH=$(basename -s ".png" "$f" | cut -d '.' -f 2)
-	PNG_HALF_WIDTH=$((PNG_WIDTH / 2))
-	PNG_ICON_NAME="icon_${PNG_WIDTH}x${PNG_WIDTH}.png"
-	mv "$f" "$PNG_ICON_NAME"
-	cp "$PNG_ICON_NAME" "icon_${PNG_HALF_WIDTH}x${PNG_HALF_WIDTH}@2x.png"
-done
-cd ..
-iconutil --convert icns "work.iconset" --output "$destination"
+# select biggest icon
+ls . | sort -V | tail -n 1 | xargs -I % mv % "$destination"
 
 cd "$start_pwd" || exit 1
 rm -rf "$work_dir"

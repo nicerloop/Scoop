@@ -20,8 +20,14 @@ function create_startmenu_shortcuts($manifest, $dir, $global, $arch) {
 }
 
 function shortcut_folder($global) {
-    if ($IsMacOS -Or $IsLinux) {
+    if ($IsMacOS) {
         return "$scoopdir/menu/Scoop Apps"
+    } elseif ($IsLinux) {
+        if ($env:XDG_DATA_DIRS) {
+            return "$env:XDG_DATA_DIRS/applications"
+        } else {
+            return "$env:HOME/.local/share/applications"
+        }
     }
     if ($global) {
         $startmenu = 'CommonStartMenu'
@@ -68,7 +74,7 @@ WINEPREFIX="$prefix" $wine "$fullName" "`$@" &
         $_ = ensure "$app/Contents/Resources/"
         $icoFullName = $icon.FullName 
         & $scoopdir/apps/scoop/current/supporting/ico2icns/ico2icns.sh $icoFullName $icns
-        $bundleIdentifier = ( "wine.launcher.$shortcutName" | tr -C -d "A-Za-z0-9-." )
+        $bundleIdentifier = ( "scoop.wine.launcher.$shortcutName" | tr -C -d "A-Za-z0-9-." )
         $info = "$app/Contents/Info.plist"
         $json = @"
 {
@@ -83,7 +89,26 @@ WINEPREFIX="$prefix" $wine "$fullName" "`$@" &
 "@
         $json | plutil -convert xml1 -o $info -
     } elseif ($IsLinux) {
-        write-host "***** TODO ***** write desktop file"
+        $desktop = "$scoop_startmenu_folder/scoop.wine.$shortcutName.desktop"
+        $fullName = $target.FullName
+        if ( -not $icon) {
+            $icon = $target
+        }
+        $icoFullName = $icon.FullName 
+        if ($env:XDG_DATA_DIRS) {
+            $png = "$env:XDG_DATA_DIRS/icons/scoop.wine.$shortcutName.png"
+        } else {
+            $png = "$env:HOME/.local/share/icons/scoop.wine.$shortcutName.png"
+        }
+        & $scoopdir/apps/scoop/current/supporting/ico2icns/ico2png.sh $icoFullName $png
+        $ini = @"
+[Desktop Entry]
+Type=Application
+Name=$shortcutName
+Exec=wine64 "$fullName"
+Icon=scoop.wine.$shortcutName.png
+"@
+        $ini | out-file $desktop
     } else {
     $wsShell = New-Object -ComObject WScript.Shell
     $wsShell = $wsShell.CreateShortcut("$scoop_startmenu_folder\$shortcutName.lnk")
