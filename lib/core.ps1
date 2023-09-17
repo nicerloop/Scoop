@@ -1244,7 +1244,7 @@ if (($PSVersionTable.PSVersion.Major) -lt 6) {
     $IsWindows = $true
     $IsMacOS = $IsLinux = $false
 }
-if ($isMacOS) {
+if ($IsMacOS -Or $IsLinux) {
     if (-not $env:XDG_CONFIG_HOME) {
         $env:XDG_CONFIG_HOME = "$env:HOME/.config"
     }
