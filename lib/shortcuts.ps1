@@ -23,11 +23,7 @@ function shortcut_folder($global) {
     if ($IsMacOS) {
         return "$scoopdir/menu/Scoop Apps"
     } elseif ($IsLinux) {
-        if ($env:XDG_DATA_DIRS) {
-            return "$env:XDG_DATA_DIRS/applications"
-        } else {
-            return "$env:HOME/.local/share/applications"
-        }
+        return "$env:HOME/.local/share/applications"
     }
     if ($global) {
         $startmenu = 'CommonStartMenu'
@@ -95,11 +91,8 @@ WINEPREFIX="$prefix" $wine "$fullName" "`$@" &
             $icon = $target
         }
         $icoFullName = $icon.FullName 
-        if ($env:XDG_DATA_DIRS) {
-            $png = "$env:XDG_DATA_DIRS/icons/scoop.wine.$shortcutName.png"
-        } else {
-            $png = "$env:HOME/.local/share/icons/scoop.wine.$shortcutName.png"
-        }
+        $png = "$env:HOME/.local/share/icons/scoop.wine.$shortcutName.png"
+        $_ = ensure "$env:HOME/.local/share/icons"
         & $scoopdir/apps/scoop/current/supporting/ico2icns/ico2png.sh $icoFullName $png
         $ini = @"
 [Desktop Entry]
@@ -109,6 +102,7 @@ Exec=wine64 "$fullName"
 Icon=scoop.wine.$shortcutName.png
 "@
         $ini | out-file $desktop
+        chmod +x "$desktop"
     } else {
     $wsShell = New-Object -ComObject WScript.Shell
     $wsShell = $wsShell.CreateShortcut("$scoop_startmenu_folder\$shortcutName.lnk")
