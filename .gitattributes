@@ -3,5 +3,4 @@
 *.exe -text
 *.zip -text
 *.dll -text
-/supporting/ico2icns/ico2icns.sh eol=lf
-/supporting/ico2icns/ico2png.sh eol=lf
+*.sh eol=lf
