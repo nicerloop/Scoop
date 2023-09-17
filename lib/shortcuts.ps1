@@ -131,12 +131,12 @@ function rm_startmenu_shortcuts($manifest, $global, $arch) {
              Remove-Item -Recurse $shortcut
         }
         } elseif ($IsLinux) {
-        $shortcut = "$(shortcut_folder $global)/scoop.wine.$shortcutName.desktop"
+        $shortcut = "$(shortcut_folder $global)/scoop.wine.$name.desktop"
         write-host "Removing shortcut $(friendly_path $shortcut)"
         if(Test-Path -Path $shortcut) {
              Remove-Item -Recurse $shortcut
         }
-        $png = "$env:HOME/.local/share/icons/scoop.wine.$shortcutName.png"
+        $png = "$env:HOME/.local/share/icons/scoop.wine.$name.png"
         write-host "Removing icon $(friendly_path $png)"
         if(Test-Path -Path $png) {
              Remove-Item -Recurse $png
