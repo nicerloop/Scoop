@@ -1,4 +1,4 @@
-$bucketsdir = "$scoopdir/buckets"
+$bucketsdir = "$scoopdir\buckets"
 
 function Find-BucketDirectory {
     <#
@@ -19,10 +19,10 @@ function Find-BucketDirectory {
     if (($null -eq $Name) -or ($Name -eq '')) {
         $Name = 'main'
     }
-    $bucket = "$bucketsdir/$Name"
+    $bucket = Join-Path $bucketsdir $Name
 
-    if ((Test-Path "$bucket/bucket") -and !$Root) {
-        $bucket = "$bucket/bucket"
+    if ((Test-Path "$bucket\bucket") -and !$Root) {
+        $bucket = Join-Path $bucket "bucket"
     }
 
     return $bucket
@@ -35,7 +35,7 @@ function bucketdir($name) {
 }
 
 function known_bucket_repos {
-    $json = "$PSScriptRoot/../buckets.json"
+    $json = "$PSScriptRoot\..\buckets.json"
 
     return Get-Content $json -Raw | ConvertFrom-Json -ErrorAction stop
 }
@@ -58,6 +58,7 @@ function Get-LocalBucket {
     .SYNOPSIS
         List all local buckets.
     #>
+    $_ = ensure $bucketsdir
     $bucketNames = (Get-ChildItem -Path $bucketsdir -Directory).Name
     if ($null -eq $bucketNames) {
         return @() # Return a zero-length list instead of $null.
@@ -103,9 +104,9 @@ function list_buckets {
             $bucket.Updated = git -C $path log --format='%aD' -n 1 | Get-Date
         } else {
             $bucket.Source = friendly_path $path
-            $bucket.Updated = (Get-Item "$path/bucket").LastWriteTime
+            $bucket.Updated = (Get-Item "$path\bucket").LastWriteTime
         }
-        $bucket.Manifests = Get-ChildItem "$path/bucket" -Force -Recurse -ErrorAction SilentlyContinue |
+        $bucket.Manifests = Get-ChildItem "$path\bucket" -Force -Recurse -ErrorAction SilentlyContinue |
                 Measure-Object | Select-Object -ExpandProperty Count
         $buckets += [PSCustomObject]$bucket
     }
@@ -129,8 +130,8 @@ function add_bucket($name, $repo) {
         return 1
     }
     foreach ($bucket in Get-LocalBucket) {
-        if (Test-Path -Path "$bucketsdir/$bucket/.git") {
-            $remote = git -C "$bucketsdir/$bucket" config --get remote.origin.url
+        if (Test-Path -Path "$bucketsdir\$bucket\.git") {
+            $remote = git -C (Join-Path $bucketsdir $bucket) config --get remote.origin.url
             if ((Convert-RepositoryUri -Uri $remote) -eq $uni_repo) {
                 warn "Bucket $bucket already exists for $repo"
                 return 2
@@ -166,7 +167,7 @@ function rm_bucket($name) {
 function new_issue_msg($app, $bucket, $title, $body) {
     $app, $manifest, $bucket, $url = Get-Manifest "$bucket/$app"
     $url = known_bucket_repo $bucket
-    $bucket_path = "$bucketsdir/$bucket"
+    $bucket_path = "$bucketsdir\$bucket"
 
     if (Test-Path $bucket_path) {
         $remote = git -C "$bucket_path" config --get remote.origin.url

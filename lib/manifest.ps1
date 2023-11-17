@@ -78,14 +78,14 @@ function save_installed_manifest($app, $bucket, $dir, $url) {
         $wc = New-Object Net.Webclient
         $wc.Headers.Add('User-Agent', (Get-UserAgent))
         $data = $wc.DownloadData($url)
-        (Get-Encoding($wc)).GetString($data) | Out-UTF8File "$dir/manifest.json"
+        (Get-Encoding($wc)).GetString($data) | Out-UTF8File "$dir\manifest.json"
     } else {
-        Copy-Item (manifest_path $app $bucket) "$dir/manifest.json"
+        Copy-Item (manifest_path $app $bucket) "$dir\manifest.json"
     }
 }
 
 function installed_manifest($app, $version, $global) {
-    parse_json "$(versiondir $app $version $global)/manifest.json"
+    parse_json "$(versiondir $app $version $global)\manifest.json"
 }
 
 function save_install_info($info, $dir) {
@@ -93,11 +93,11 @@ function save_install_info($info, $dir) {
     $nulls | ForEach-Object { $info.remove($_) } # strip null-valued
 
     $file_content = $info | ConvertToPrettyJson # in 'json.ps1'
-    [System.IO.File]::WriteAllLines("$dir/install.json", $file_content)
+    [System.IO.File]::WriteAllLines((Join-Path $dir "install.json"), $file_content)
 }
 
 function install_info($app, $version, $global) {
-    $path = "$(versiondir $app $version $global)/install.json"
+    $path = "$(versiondir $app $version $global)\install.json"
     if (!(Test-Path $path)) { return $null }
     parse_json $path
 }
@@ -144,7 +144,7 @@ function generate_user_manifest($app, $bucket, $version) {
 
     ensure (usermanifestsdir) | out-null
     try {
-        Invoke-AutoUpdate $app "$(Convert-Path (usermanifestsdir))/$app.json" $manifest $version $(@{ })
+        Invoke-AutoUpdate $app "$(Convert-Path (usermanifestsdir))\$app.json" $manifest $version $(@{ })
         return Convert-Path (usermanifest $app)
     } catch {
         write-host -f darkred "Could not install $app@$version"

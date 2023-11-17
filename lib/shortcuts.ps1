@@ -21,7 +21,7 @@ function create_startmenu_shortcuts($manifest, $dir, $global, $arch) {
 
 function shortcut_folder($global) {
     if ($IsMacOS) {
-        return "$scoopdir/menu/Scoop Apps"
+        return "$scoopdir/shims"
     } elseif ($IsLinux) {
         return "$env:HOME/.local/share/applications"
     }
@@ -68,8 +68,8 @@ WINEPREFIX="$prefix" $wine "$fullName" "`$@" &
         }
         $icns = "$app/Contents/Resources/$shortcutName.icns"
         $_ = ensure "$app/Contents/Resources/"
-        $icoFullName = $icon.FullName 
-        & $scoopdir/apps/scoop/current/supporting/ico2icns/ico2icns.sh $icoFullName $icns
+        $icoFullName = $icon.FullName
+        & $PSScriptRoot/../supporting/ico_convert.sh $icoFullName $icns
         $bundleIdentifier = ( "scoop.wine.launcher.$shortcutName" | tr -C -d "A-Za-z0-9-." )
         $info = "$app/Contents/Info.plist"
         $json = @"
@@ -93,7 +93,7 @@ WINEPREFIX="$prefix" $wine "$fullName" "`$@" &
         $icoFullName = $icon.FullName 
         $png = "$env:HOME/.local/share/icons/scoop.wine.$shortcutName.png"
         $_ = ensure "$env:HOME/.local/share/icons"
-        & $scoopdir/apps/scoop/current/supporting/ico2icns/ico2png.sh $icoFullName $png
+        & $PSScriptRoot/../supporting/ico_convert.sh $icoFullName $png
         $ini = @"
 [Desktop Entry]
 Type=Application
@@ -104,17 +104,17 @@ Icon=scoop.wine.$shortcutName.png
         $ini | out-file $desktop
         chmod +x "$desktop"
     } else {
-    $wsShell = New-Object -ComObject WScript.Shell
-    $wsShell = $wsShell.CreateShortcut("$scoop_startmenu_folder\$shortcutName.lnk")
-    $wsShell.TargetPath = $target.FullName
-    $wsShell.WorkingDirectory = $target.DirectoryName
-    if ($arguments) {
-        $wsShell.Arguments = $arguments
-    }
-    if($icon -and $icon.Exists) {
-        $wsShell.IconLocation = $icon.FullName
-    }
-    $wsShell.Save()
+        $wsShell = New-Object -ComObject WScript.Shell
+        $wsShell = $wsShell.CreateShortcut("$scoop_startmenu_folder\$shortcutName.lnk")
+        $wsShell.TargetPath = $target.FullName
+        $wsShell.WorkingDirectory = $target.DirectoryName
+        if ($arguments) {
+            $wsShell.Arguments = $arguments
+        }
+        if($icon -and $icon.Exists) {
+            $wsShell.IconLocation = $icon.FullName
+        }
+        $wsShell.Save()
     }
     write-host "Creating shortcut for $shortcutName ($(fname $target))"
 }
@@ -125,28 +125,28 @@ function rm_startmenu_shortcuts($manifest, $global, $arch) {
     $shortcuts | Where-Object { $_ -ne $null } | ForEach-Object {
         $name = $_.item(1)
         if ($IsMacOS) {
-        $shortcut = "$(shortcut_folder $global)/$name.app"
-        write-host "Removing shortcut $(friendly_path $shortcut)"
-        if(Test-Path -Path $shortcut) {
-             Remove-Item -Recurse $shortcut
-        }
+            $shortcut = "$(shortcut_folder $global)/$name.app"
+            write-host "Removing shortcut $(friendly_path $shortcut)"
+            if(Test-Path -Path $shortcut) {
+                 Remove-Item -Recurse $shortcut
+            }
         } elseif ($IsLinux) {
-        $shortcut = "$(shortcut_folder $global)/scoop.wine.$name.desktop"
-        write-host "Removing shortcut $(friendly_path $shortcut)"
-        if(Test-Path -Path $shortcut) {
-             Remove-Item -Recurse $shortcut
-        }
-        $png = "$env:HOME/.local/share/icons/scoop.wine.$name.png"
-        write-host "Removing icon $(friendly_path $png)"
-        if(Test-Path -Path $png) {
-             Remove-Item -Recurse $png
-        }
+            $shortcut = "$(shortcut_folder $global)/scoop.wine.$name.desktop"
+            write-host "Removing shortcut $(friendly_path $shortcut)"
+            if(Test-Path -Path $shortcut) {
+                 Remove-Item -Recurse $shortcut
+            }
+            $png = "$env:HOME/.local/share/icons/scoop.wine.$name.png"
+            write-host "Removing icon $(friendly_path $png)"
+            if(Test-Path -Path $png) {
+                 Remove-Item -Recurse $png
+            }
         } else {
-        $shortcut = "$(shortcut_folder $global)\$name.lnk"
-        write-host "Removing shortcut $(friendly_path $shortcut)"
-        if(Test-Path -Path $shortcut) {
-             Remove-Item $shortcut
-        }
+            $shortcut = "$(shortcut_folder $global)\$name.lnk"
+            write-host "Removing shortcut $(friendly_path $shortcut)"
+            if(Test-Path -Path $shortcut) {
+                 Remove-Item $shortcut
+            }
         }
     }
 }

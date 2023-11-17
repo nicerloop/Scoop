@@ -68,8 +68,8 @@ function update_scoop($show_update_log) {
     Write-Host "Updating Scoop..."
     $currentdir = fullpath $(versiondir 'scoop' 'current')
     if (!(Test-Path "$currentdir\.git")) {
-        $newdir = "$currentdir\..\new"
-        $olddir = "$currentdir\..\old"
+        $newdir = Join-Path $currentdir ".." "new"
+        $olddir = Join-Path $currentdir ".." "old"
 
         # get git scoop
         git_cmd clone -q $configRepo --branch $configBranch --single-branch "`"$newdir`""
