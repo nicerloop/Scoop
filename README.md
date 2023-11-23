@@ -2,8 +2,9 @@
 
 see https://github.com/nicerloop/ScoopInstall/tree/macos
 
-uses native tools from https://brew.sh:
-- gcenx/wine/wine-crossover
+uses native tools from https://brew.sh
+- powershell
+- wine
 - icoutils
 - coreutils
 - msitools
