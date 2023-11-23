@@ -1257,7 +1257,7 @@ Optimize-SecurityProtocol
 
 # Load Scoop config
 $configHome = $env:XDG_CONFIG_HOME, "$env:USERPROFILE\.config" | Select-Object -First 1
-$configFile = Join-Path $configHome "scoop" "config.json"
+$configFile = Join-Path (Join-Path $configHome "scoop") "config.json"
 $scoopConfig = load_cfg $configFile
 
 # NOTE Scoop config file migration. Remove this after 2023/6/30
