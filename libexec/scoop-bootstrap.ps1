@@ -1,3 +1,5 @@
+# Summary: Setup minimal manifests for 7zip and git
+
 . "$PSScriptRoot\..\lib\buckets.ps1"
 
 $BucketPath = Join-Path (Find-BucketDirectory "main") "bucket"
