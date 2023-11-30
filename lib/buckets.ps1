@@ -58,7 +58,7 @@ function Get-LocalBucket {
     .SYNOPSIS
         List all local buckets.
     #>
-    $bucketNames = (Get-ChildItem -Path $bucketsdir -Directory).Name
+    $bucketNames = (Get-ChildItem -Path (ensure $bucketsdir) -Directory).Name
     if ($null -eq $bucketNames) {
         return @() # Return a zero-length list instead of $null.
     } else {
