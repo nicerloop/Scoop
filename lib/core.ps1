@@ -1216,13 +1216,24 @@ function Out-UTF8File {
 # Core Bootstrap #
 ##################
 
+If ($PSVersionTable.PSVersion.Major -Lt 6) {
+    # We know we're on Windows PowerShell 5.1 or earlier
+    $IsWindows = $true
+    $IsLinux = $IsMacOS = $false
+}
+If ($IsLinux -Or $IsMacOS) {
+    If (-Not ($env:XDG_CONFIG_HOME)) {
+        $env:XDG_CONFIG_HOME = Join-Path $env:HOME ".config"
+    }
+}
+
 # Note: Github disabled TLS 1.0 support on 2018-02-23. Need to enable TLS 1.2
 #       for all communication with api.github.com
 Optimize-SecurityProtocol
 
 # Load Scoop config
 $configHome = $env:XDG_CONFIG_HOME, "$env:USERPROFILE\.config" | Select-Object -First 1
-$configFile = "$configHome\scoop\config.json"
+$configFile = Join-Path (Join-Path $configHome "scoop") "config.json"
 $scoopConfig = load_cfg $configFile
 
 # NOTE Scoop config file migration. Remove this after 2023/6/30
