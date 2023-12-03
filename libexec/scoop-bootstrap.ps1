@@ -1,4 +1,4 @@
-# Summary: Setup scoop shim and minimal manifests for 7zip and git
+# Summary: Setup scoop shim and main bucket as does the Scoop installer
 
 . "$PSScriptRoot\..\lib\buckets.ps1"
 . "$PSScriptRoot\..\lib\core.ps1"
