@@ -590,6 +590,10 @@ function Invoke-ExternalCommand {
 
 function env($name,$global,$val='__get') {
     $target = 'User'; if($global) {$target = 'Machine'}
+    if ($IsMacOS -Or $IsLinux) {
+        $target = 'Process'
+        if ($global) { return }
+    }
     if($val -eq '__get') { [environment]::getEnvironmentVariable($name,$target) }
     else { [environment]::setEnvironmentVariable($name,$val,$target) }
 }
@@ -621,6 +625,11 @@ function is_directory([String] $path) {
 function movedir($from, $to) {
     $from = $from.trimend('\')
     $to = $to.trimend('\')
+
+    if ($IsMacOS -Or $IsLinux) {
+        rsync -a "$from/".Replace("\","/") "$to"
+        return
+    }
 
     $proc = New-Object System.Diagnostics.Process
     $proc.StartInfo.FileName = 'robocopy.exe'
@@ -704,7 +713,7 @@ function shim($path, $global, $name, $arg) {
     ensure_in_path $abs_shimdir $global
     if (!$name) { $name = strip_ext (fname $path) }
 
-    $shim = "$abs_shimdir\$($name.tolower())"
+    $shim = Join-Path $abs_shimdir $name.tolower()
 
     # convert to relative path
     Push-Location $abs_shimdir
@@ -773,10 +782,15 @@ function shim($path, $global, $name, $arg) {
             "# $resolved_path",
             "if command -v pwsh.exe > /dev/null 2>&1; then",
             "    pwsh.exe -noprofile -ex unrestricted -file `"$resolved_path`" $arg `"$@`"",
+            "elif command -v pwsh > /dev/null 2>&1; then",
+            "    pwsh -noprofile -ex unrestricted -file `"$resolved_path`" $arg `"$@`"",
             "else",
             "    powershell.exe -noprofile -ex unrestricted -file `"$resolved_path`" $arg `"$@`"",
             "fi"
         ) -join "`n" | Out-UTF8File $shim -NoNewLine
+        if ($IsMacOS -Or $IsLinux) {
+            chmod +x $shim
+        }
     } elseif ($path -match '\.jar$') {
         warn_on_overwrite "$shim.cmd" $path
         @(
@@ -857,8 +871,9 @@ function ensure_in_path($dir, $global) {
     if($path -notmatch [regex]::escape($dir)) {
         write-output "Adding $(friendly_path $dir) to $(if($global){'global'}else{'your'}) path."
 
-        env 'PATH' $global "$dir;$path" # for future sessions...
-        $env:PATH = "$dir;$env:PATH" # for this session
+        $sep = [IO.Path]::PathSeparator
+        env 'PATH' $global "$dir$sep$path" # for future sessions...
+        $env:PATH = "$dir$sep$env:PATH" # for this session
     }
 }
 
