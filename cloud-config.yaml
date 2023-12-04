@@ -4,4 +4,4 @@ runcmd:
   - sudo curl -sLO --output-dir /var/cache/apt/archives https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb
   - sudo dpkg -i /var/cache/apt/archives/packages-microsoft-prod.deb
   - sudo apt update -y
-  - sudo apt install -y powershell wine icoutils msitools
+  - sudo apt install -y powershell wine icoutils msitools ubuntu-desktop xrdp
