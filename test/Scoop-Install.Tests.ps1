@@ -43,7 +43,7 @@ Describe 'is_in_dir' -Tag 'Scoop' {
     }
 }
 
-Describe 'env add and remove path' -Tag 'Scoop', 'Windows' {
+Describe 'env add and remove path' -Tag 'Scoop' {
     BeforeAll {
         # test data
         $manifest = @{
@@ -60,14 +60,16 @@ Describe 'env add and remove path' -Tag 'Scoop', 'Windows' {
         Mock add_first_in_path {}
         Mock remove_from_path {}
 
+        $dirSep = [IO.Path]::DirectorySeparatorChar
+
         # adding
         env_add_path $manifest $testdir $global
-        Assert-MockCalled add_first_in_path -Times 1 -ParameterFilter { $dir -like "$testdir\foo" }
-        Assert-MockCalled add_first_in_path -Times 1 -ParameterFilter { $dir -like "$testdir\bar" }
+        Assert-MockCalled add_first_in_path -Times 1 -ParameterFilter { $dir -like "$testdir${dirSep}foo" }
+        Assert-MockCalled add_first_in_path -Times 1 -ParameterFilter { $dir -like "$testdir${dirSep}bar" }
 
         env_rm_path $manifest $testdir $global
-        Assert-MockCalled remove_from_path -Times 1 -ParameterFilter { $dir -like "$testdir\foo" }
-        Assert-MockCalled remove_from_path -Times 1 -ParameterFilter { $dir -like "$testdir\bar" }
+        Assert-MockCalled remove_from_path -Times 1 -ParameterFilter { $dir -like "$testdir${dirSep}foo" }
+        Assert-MockCalled remove_from_path -Times 1 -ParameterFilter { $dir -like "$testdir${dirSep}bar" }
     }
 }
 
