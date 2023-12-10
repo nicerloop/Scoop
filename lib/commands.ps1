@@ -1,5 +1,5 @@
 function command_files {
-    (Get-ChildItem "$PSScriptRoot\..\libexec") + (Get-ChildItem "$scoopdir\shims") |
+    (Get-ChildItem "$PSScriptRoot\..\libexec") + (Get-ChildItem (ensure "$scoopdir\shims")) |
         Where-Object 'scoop-.*?\.ps1$' -Property Name -Match
 }
 
