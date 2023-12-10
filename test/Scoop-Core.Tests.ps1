@@ -126,7 +126,7 @@ Describe 'is_directory' -Tag 'Scoop' {
     }
 }
 
-Describe 'movedir' -Tag 'Scoop', 'Windows' {
+Describe 'movedir' -Tag 'Scoop' {
     BeforeAll {
         $working_dir = setup_working 'movedir'
         $extract_dir = 'subdir'

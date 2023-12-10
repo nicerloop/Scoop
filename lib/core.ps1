@@ -793,6 +793,14 @@ function movedir($from, $to) {
     $from = $from.trimend('\')
     $to = $to.trimend('\')
 
+    if ($IsMacOS -Or $IsLinux) {
+        $from = $from.Replace('\','/')
+        $to = $to.Replace('\','/')
+        rsync -a "$from/" $to
+        rm -r $from
+        return
+    }
+
     $proc = New-Object System.Diagnostics.Process
     $proc.StartInfo.FileName = 'robocopy.exe'
     $proc.StartInfo.Arguments = "`"$from`" `"$to`" /e /move"
