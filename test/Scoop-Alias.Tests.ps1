@@ -28,8 +28,8 @@ Describe 'Manipulate Alias' -Tag 'Scoop' {
         New-Item $alias_file -Type File -Force
         $alias_file | Should -Exist
 
-        add_alias 'rm' 'test'
-        & $alias_file | Should -Not -Be 'test'
+        add_alias 'rm' 'hostname'
+        & $alias_file | Should -Not -Be 'hostname'
     }
 
     It 'Removes an existing alias' {
