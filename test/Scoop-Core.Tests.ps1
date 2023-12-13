@@ -163,7 +163,7 @@ Describe 'movedir' -Tag 'Scoop' {
     }
 }
 
-Describe 'shim' -Tag 'Scoop', 'Windows' {
+Describe 'shim' -Tag 'Scoop' {
     BeforeAll {
         $working_dir = setup_working 'shim'
         $shimdir = shimdir
@@ -197,7 +197,7 @@ Describe 'shim' -Tag 'Scoop', 'Windows' {
     }
 }
 
-Describe 'rm_shim' -Tag 'Scoop', 'Windows' {
+Describe 'rm_shim' -Tag 'Scoop' {
     BeforeAll {
         $working_dir = setup_working 'shim'
         $shimdir = shimdir
@@ -216,7 +216,7 @@ Describe 'rm_shim' -Tag 'Scoop', 'Windows' {
     }
 }
 
-Describe 'get_app_name_from_shim' -Tag 'Scoop', 'Windows' {
+Describe 'get_app_name_from_shim' -Tag 'Scoop' {
     BeforeAll {
         $working_dir = setup_working 'shim'
         $shimdir = shimdir

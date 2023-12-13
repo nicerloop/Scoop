@@ -739,6 +739,14 @@ public static extern IntPtr SendMessageTimeout(
 }
 
 function env($name, $global, $val = '__get') {
+    if ($IsWSL) {
+        $target = 'User'; if($global) {$target = 'Machine'}
+        if($val -eq '__get') {
+            return (powershell.exe -c "[environment]::getEnvironmentVariable(`'$name`',`'$target`')")
+        } else {
+            return (powershell.exe -c "[environment]::setEnvironmentVariable(`'$name`',`'$val`',`'$target`')")
+        }
+    }
     $RegisterKey = if ($global) {
         Get-Item -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager'
     } else {
@@ -883,13 +891,15 @@ function shim($path, $global, $name, $arg) {
     ensure_in_path $abs_shimdir $global
     if (!$name) { $name = strip_ext (fname $path) }
 
-    $shim = "$abs_shimdir\$($name.tolower())"
+    $shim = Join-Path $abs_shimdir $name.tolower()
 
     # convert to relative path
     $resolved_path = Convert-Path $path
     Push-Location $abs_shimdir
     $relative_path = Resolve-Path -Relative $resolved_path
     Pop-Location
+
+    if ($IsWSL) { $resolved_path = win_path $resolved_path }
 
     if ($path -match '\.(exe|com)$') {
         # for programs with no awareness of any shell
@@ -939,27 +949,47 @@ function shim($path, $global, $name, $arg) {
         }
         $ps1text -join "`r`n" | Out-UTF8File "$shim.ps1"
 
+        if ($IsWSL) { $wsl_resolved_path = (wslpath -u $resolved_path) }
+
         # make ps1 accessible from cmd.exe
         warn_on_overwrite "$shim.cmd" $path
         @(
             "@rem $resolved_path",
             "@echo off",
+            "powershell -Command `"exit ((Get-ExecutionPolicy) -Eq 'AllSigned')`"",
+            "if %errorlevel% equ 1 goto wsl",
             "where /q pwsh.exe",
             "if %errorlevel% equ 0 (",
             "    pwsh -noprofile -ex unrestricted -file `"$resolved_path`" $arg %*",
             ") else (",
             "    powershell -noprofile -ex unrestricted -file `"$resolved_path`" $arg %*",
-            ")"
+            ")",
+            "exit %errorlevel%"
+            ":wsl",
+            "wsl -- /bin/sh -c `"PWSH=/usr/bin/pwsh ; test -x /snap/bin/pwsh && PWSH=/snap/bin/pwsh ; \`$PWSH -file '$wsl_resolved_path' $arg %*`"",
+            "exit %errorlevel%"
         ) -join "`r`n" | Out-UTF8File "$shim.cmd"
 
         warn_on_overwrite $shim $path
         @(
             "#!/bin/sh",
             "# $resolved_path",
+            "if command -v powershell.exe > /dev/null 2>&1; then",
+            "    powershell.exe -Command `"exit ((Get-ExecutionPolicy) -Eq 'AllSigned')`"",
+            "    if `$? ; then",
+            "        if command -v pwsh > /dev/null 2>&1; then",
+            "            pwsh -Command `"exit ((Get-ExecutionPolicy) -Ne 'AllSigned')`"",
+            "            if `$? ; then",
+            "                pwsh -file `"$wsl_resolved_path`" $arg `"`$@`"",
+            "            fi",
+            "        fi",
+            "    else",
             "if command -v pwsh.exe > /dev/null 2>&1; then",
             "    pwsh.exe -noprofile -ex unrestricted -file `"$resolved_path`" $arg `"$@`"",
             "else",
             "    powershell.exe -noprofile -ex unrestricted -file `"$resolved_path`" $arg `"$@`"",
+            "fi",
+            "    fi",
             "fi"
         ) -join "`n" | Out-UTF8File $shim -NoNewLine
     } elseif ($path -match '\.jar$') {
@@ -1029,11 +1059,17 @@ function search_in_path($target) {
 function ensure_in_path($dir, $global) {
     $path = env 'PATH' $global
     $dir = fullpath $dir
+    if($IsWSL) { $dir = win_path $dir }
     if($path -notmatch [regex]::escape($dir)) {
         write-output "Adding $(friendly_path $dir) to $(if($global){'global'}else{'your'}) path."
 
         env 'PATH' $global "$dir;$path" # for future sessions...
-        $env:PATH = "$dir;$env:PATH" # for this session
+        if ($IsWSL) {
+            $dir = wslpath -u $dir
+            $env:PATH = "${dir}:$env:PATH" # for this session
+        } else {
+            $env:PATH = "$dir;$env:PATH" # for this session
+        }
     }
 }
 
@@ -1387,6 +1423,15 @@ function Out-UTF8File {
     }
 }
 
+function win_path($path) {
+    $win_path = $(wslpath -w $path) 2> $NULL
+    if ($LASTEXITCODE -eq 0) {
+        return $win_path
+    } else {
+        return "$(win_path $(Split-Path $path))\$(Split-Path -Leaf $path)"
+    }
+}
+
 ##################
 # Core Bootstrap #
 ##################
@@ -1394,6 +1439,8 @@ function Out-UTF8File {
 # Note: Github disabled TLS 1.0 support on 2018-02-23. Need to enable TLS 1.2
 #       for all communication with api.github.com
 Optimize-SecurityProtocol
+
+If ($IsLinux) { $IsWSL = (uname -a).ToLower().Contains('wsl') }
 
 # Load Scoop config
 $configHome = $env:XDG_CONFIG_HOME, "$env:USERPROFILE\.config" | Select-Object -First 1
