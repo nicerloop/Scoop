@@ -7,7 +7,7 @@ BeforeAll {
     . "$PSScriptRoot\..\lib\versions.ps1"
 }
 
-Describe 'Decompression function' -Tag 'Scoop', 'Windows', 'Decompress' {
+Describe 'Decompression function' -Tag 'Scoop', 'Decompress' {
 
     BeforeAll {
         $working_dir = setup_working 'decompress'
@@ -32,7 +32,7 @@ Describe 'Decompression function' -Tag 'Scoop', 'Windows', 'Decompress' {
         }
     }
 
-    Context '7zip extraction' {
+    Context '7zip extraction' -Tag 'Windows' {
 
         BeforeAll {
             if ($env:CI) {
@@ -115,7 +115,7 @@ Describe 'Decompression function' -Tag 'Scoop', 'Windows', 'Decompress' {
         }
     }
 
-    Context 'zstd extraction' {
+    Context 'zstd extraction' -Tag 'Windows' {
 
         BeforeAll {
             if ($env:CI) {
@@ -150,7 +150,7 @@ Describe 'Decompression function' -Tag 'Scoop', 'Windows', 'Decompress' {
         }
     }
 
-    Context 'msi extraction' {
+    Context 'msi extraction' -Tag 'Windows' {
 
         BeforeAll {
             if ($env:CI) {
@@ -184,7 +184,7 @@ Describe 'Decompression function' -Tag 'Scoop', 'Windows', 'Decompress' {
         }
     }
 
-    Context 'inno extraction' {
+    Context 'inno extraction' -Tag 'Windows' {
 
         BeforeAll {
             if ($env:CI) {
