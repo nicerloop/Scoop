@@ -7,5 +7,6 @@ Vagrant.configure("2") do |config|
   config.vm.define "ubuntu" do |ubuntu|
     ubuntu.vm.box = "gusztavvargadr/ubuntu-desktop"
     ubuntu.vm.synced_folder ".", "/home/vagrant/scoop/apps/scoop/current"
+    ubuntu.vm.provision "shell", inline: "chown -R vagrant:vagrant /home/vagrant/scoop"
   end
 end
