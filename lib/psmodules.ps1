@@ -50,7 +50,8 @@ function ensure_in_psmodulepath($dir, $global) {
     if ($path -notmatch [Regex]::Escape($dir)) {
         Write-Output "Adding $(friendly_path $dir) to $(if($global){'global'}else{'your'}) PowerShell module path."
 
-        env 'psmodulepath' $global "$dir;$path" # for future sessions...
-        $env:psmodulepath = "$dir;$env:psmodulepath" # for this session
+        $sep = [IO.Path]::PathSeparator
+        env 'psmodulepath' $global "$dir$sep$path" # for future sessions...
+        $env:psmodulepath = "$dir$sep$env:psmodulepath" # for this session
     }
 }

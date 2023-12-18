@@ -1031,8 +1031,9 @@ function get_shim_path() {
 }
 
 function search_in_path($target) {
-    $path = (env 'PATH' $false) + ";" + (env 'PATH' $true)
-    foreach($dir in $path.split(';')) {
+    $sep = [IO.Path]::PathSeparator
+    $path = (env 'PATH' $false) + $sep + (env 'PATH' $true)
+    foreach($dir in $path.split($sep)) {
         if(test-path "$dir\$target" -pathType leaf) {
             return "$dir\$target"
         }
@@ -1045,8 +1046,9 @@ function ensure_in_path($dir, $global) {
     if($path -notmatch [regex]::escape($dir)) {
         write-output "Adding $(friendly_path $dir) to $(if($global){'global'}else{'your'}) path."
 
-        env 'PATH' $global "$dir;$path" # for future sessions...
-        $env:PATH = "$dir;$env:PATH" # for this session
+        $sep = [IO.Path]::PathSeparator
+        env 'PATH' $global "$dir$sep$path" # for future sessions...
+        $env:PATH = "$dir$sep$env:PATH" # for this session
     }
 }
 
@@ -1135,11 +1137,12 @@ function add_first_in_path($dir, $global) {
 
     # future sessions
     $null, $currpath = strip_path (env 'path' $global) $dir
-    env 'path' $global "$dir;$currpath"
+    $sep = [IO.Path]::PathSeparator
+    env 'path' $global "$dir$sep$currpath"
 
     # this session
     $null, $env:PATH = strip_path $env:PATH $dir
-    $env:PATH = "$dir;$env:PATH"
+    $env:PATH = "$dir$sep$env:PATH"
 }
 
 function remove_from_path($dir, $global) {
