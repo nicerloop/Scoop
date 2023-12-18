@@ -896,7 +896,7 @@ function shim($path, $global, $name, $arg) {
     ensure_in_path $abs_shimdir $global
     if (!$name) { $name = strip_ext (fname $path) }
 
-    $shim = "$abs_shimdir\$($name.tolower())"
+    $shim = Join-Path $abs_shimdir $name.tolower()
 
     # convert to relative path
     $resolved_path = Convert-Path $path
@@ -969,12 +969,13 @@ function shim($path, $global, $name, $arg) {
         @(
             "#!/bin/sh",
             "# $resolved_path",
-            "if command -v pwsh.exe > /dev/null 2>&1; then",
-            "    pwsh.exe -noprofile -ex unrestricted -file `"$resolved_path`" $arg `"$@`"",
+            "if command -v pwsh > /dev/null 2>&1; then",
+            "    pwsh -noprofile -ex unrestricted -file `"$resolved_path`" $arg `"$@`"",
             "else",
             "    powershell.exe -noprofile -ex unrestricted -file `"$resolved_path`" $arg `"$@`"",
             "fi"
         ) -join "`n" | Out-UTF8File $shim -NoNewLine
+        if ($IsLinux -Or $IsMacOS) { chmod +x $shim }
     } elseif ($path -match '\.jar$') {
         warn_on_overwrite "$shim.cmd" $path
         @(
