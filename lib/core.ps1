@@ -739,6 +739,19 @@ public static extern IntPtr SendMessageTimeout(
 }
 
 function env($name, $global, $val = '__get') {
+    if ($IsLinux -Or $IsMacOS) {
+        if ($val -eq '__get') {
+            if ($global) {
+                return ""
+            } else {
+                return [environment]::getEnvironmentVariable($name,'Process')
+            }
+        } else {
+            Write-Host "Environment variables are not persistently set by Scoop on Linux or macOS."
+            Write-Host "Please ensure $name is $(if ($global) { "globally" } else { "locally" }) set to $val"
+            return
+        }
+    }
     $RegisterKey = if ($global) {
         Get-Item -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager'
     } else {
