@@ -1443,8 +1443,9 @@ Optimize-SecurityProtocol
 If ($IsLinux) { $IsWSL = (uname -a).ToLower().Contains('wsl') }
 
 # Load Scoop config
+if (($IsLinux -Or $isMacOS) -And (-not $env:XDG_CONFIG_HOME)) { $env:XDG_CONFIG_HOME = "$env:HOME/.config" }
 $configHome = $env:XDG_CONFIG_HOME, "$env:USERPROFILE\.config" | Select-Object -First 1
-$configFile = "$configHome\scoop\config.json"
+$configFile = Join-Path (Join-Path $configHome "scoop") "config.json"
 # Check if it's the expected install path for scoop: <root>/apps/scoop/current
 $coreRoot = Split-Path $PSScriptRoot
 $pathExpected = ($coreRoot -replace '\\','/') -like '*apps/scoop/current*'
