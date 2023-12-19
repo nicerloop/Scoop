@@ -910,6 +910,9 @@ function shim($path, $global, $name, $arg) {
             Write-Output "args = $arg" | Out-UTF8File "$shim.shim" -Append
         }
 
+        if ($IsWSL) {
+            $resolved_path = wslpath -u $resolved_path
+        }
         $target_subsystem = Get-PESubsystem $resolved_path
         if ($target_subsystem -eq 2) { # we only want to make shims GUI
             Write-Output "Making $shim.exe a GUI binary."
