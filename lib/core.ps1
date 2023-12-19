@@ -310,11 +310,11 @@ function filesize($length) {
 
 # dirs
 function basedir($global) { if($global) { return $globaldir } $scoopdir }
-function appsdir($global) { "$(basedir $global)\apps" }
-function shimdir($global) { "$(basedir $global)\shims" }
-function modulesdir($global) { "$(basedir $global)\modules" }
-function appdir($app, $global) { "$(appsdir $global)\$app" }
-function versiondir($app, $version, $global) { "$(appdir $app $global)\$version" }
+function appsdir($global) { Join-Path (basedir $global) "apps" }
+function shimdir($global) { Join-Path (basedir $global) "shims" }
+function modulesdir($global) { Join-Path (basedir $global) "modules" }
+function appdir($app, $global) { Join-Path (appsdir $global) $app }
+function versiondir($app, $version, $global) { Join-Path (appdir $app $global) $version }
 
 function currentdir($app, $global) {
     if (get_config NO_JUNCTION) {
@@ -325,10 +325,10 @@ function currentdir($app, $global) {
     "$(appdir $app $global)\$version"
 }
 
-function persistdir($app, $global) { "$(basedir $global)\persist\$app" }
-function usermanifestsdir { "$(basedir)\workspace" }
-function usermanifest($app) { "$(usermanifestsdir)\$app.json" }
-function cache_path($app, $version, $url) { "$cachedir\$app#$version#$($url -replace '[^\w\.\-]+', '_')" }
+function persistdir($app, $global) { Join-Path (Join-Path (basedir $global) "persist") $app }
+function usermanifestsdir { Join-Path (basedir) "workspace" }
+function usermanifest($app) { Join-Path (usermanifestsdir) "$app.json" }
+function cache_path($app, $version, $url) { Join-Path $cachedir "$app#$version#$($url -replace '[^\w\.\-]+', '_')" }
 
 # apps
 function sanitary_path($path) { return [regex]::replace($path, "[/\\?:*<>|]", "") }
