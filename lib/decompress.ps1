@@ -28,6 +28,10 @@ function Expand-7zipArchive {
         $7zPath = Get-HelperPath -Helper 7zip
     }
     $LogPath = Join-Path $(Split-Path $Path) "7zip.log"
+    if ($IsWSL) {
+        $Path = win_path $Path
+        $DestinationPath = win_path $DestinationPath
+    }
     $DestinationPath = $DestinationPath.TrimEnd('\')
     $ArgList = @('x', $Path, "-o$DestinationPath", '-xr!*.nsis', '-y')
     $IsTar = ((strip_ext $Path) -match '\.tar$') -or ($Path -match '\.t[abgpx]z2?$')
@@ -45,6 +49,9 @@ function Expand-7zipArchive {
     $Status = Invoke-ExternalCommand $7zPath $ArgList -LogPath $LogPath
     if (!$Status) {
         abort "Failed to extract files from $Path.`nLog file:`n  $(friendly_path $LogPath)`n$(new_issue_msg $app $bucket 'decompress error')"
+    }
+    if ($IsWSL) {
+        $DestinationPath = wslpath -u $DestinationPath
     }
     if (!$IsTar -and $ExtractDir) {
         movedir "$DestinationPath\$ExtractDir" $DestinationPath | Out-Null
@@ -64,6 +71,9 @@ function Expand-7zipArchive {
         }
     }
     if ($Removal) {
+        if ($IsWSL) {
+            $Path = wslpath -u $Path
+        }
         # Remove original archive file
         if (($Path -replace '.*\.([^\.]*)$', '$1') -eq '001') {
             # Remove splited 7-zip archive parts
