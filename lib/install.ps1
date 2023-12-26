@@ -1188,7 +1188,11 @@ function persist_data($manifest, $original_dir, $persist_dir) {
                 attrib $source +R /L
             } else {
                 # target is a file, create hard link
-                New-Item -Path $source -ItemType HardLink -Value $target | Out-Null
+                if ($IsWSL) {
+                    powershell.exe -c "New-Item -Path `'$(win_path $source)`' -ItemType HardLink -Value `'$(win_path $target)`' | Out-Null"
+                } else {
+                    New-Item -Path $source -ItemType HardLink -Value $target | Out-Null
+                }
             }
         }
     }
