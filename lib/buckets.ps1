@@ -1,4 +1,4 @@
-$bucketsdir = "$scoopdir\buckets"
+$bucketsdir = Join-Path $scoopdir "buckets"
 
 function Find-BucketDirectory {
     <#
@@ -19,10 +19,10 @@ function Find-BucketDirectory {
     if (($null -eq $Name) -or ($Name -eq '')) {
         $Name = 'main'
     }
-    $bucket = "$bucketsdir\$Name"
+    $bucket = Join-Path $bucketsdir $Name
 
     if ((Test-Path "$bucket\bucket") -and !$Root) {
-        $bucket = "$bucket\bucket"
+        $bucket = Join-Path $bucket "bucket"
     }
 
     return $bucket
