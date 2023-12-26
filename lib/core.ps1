@@ -375,13 +375,13 @@ function Get-AppFilePath {
     )
 
     # normal path to file
-    $Path = "$(currentdir $App $false)\$File"
+    $Path = Join-Path (currentdir $App $false) $File
     if (Test-Path $Path) {
         return $Path
     }
 
     # global path to file
-    $Path = "$(currentdir $App $true)\$File"
+    $Path = Join-Path (currentdir $App $true) $File
     if (Test-Path $Path) {
         return $Path
     }
