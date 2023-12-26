@@ -168,6 +168,11 @@ function Expand-MsiArchive {
         $ArgList = @('/a', "`"$Path`"", '/qn', "TARGETDIR=`"$DestinationPath\SourceDir`"")
     }
     $LogPath = Join-Path (Split-Path $Path) "msi.log"
+    if ($IsWSL) {
+        $MsiPath = 'msiexec.exe'
+        $ArgList = @('/a', "`"$(win_path $Path)`"", '/qn', "TARGETDIR=`"$(win_path $DestinationPath)\SourceDir`"")
+        $LogPath = win_path $LogPath
+    }
     if ($Switches) {
         $ArgList += (-split $Switches)
     }
