@@ -1143,8 +1143,8 @@ function persist_data($manifest, $original_dir, $persist_dir) {
 
             $source = $source.TrimEnd("/").TrimEnd("\\")
 
-            $source = fullpath "$dir\$source"
-            $target = fullpath "$persist_dir\$target"
+            $source = fullpath (Join-Path $dir $source)
+            $target = fullpath (Join-Path $persist_dir $target)
 
             # if we have had persist data in the store, just create link and go
             if (Test-Path $target) {
