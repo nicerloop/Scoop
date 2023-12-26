@@ -704,12 +704,9 @@ function run_installer($fname, $manifest, $architecture, $dir, $global) {
     $installer = installer $manifest $architecture
     if($installer.script) {
         write-output "Running installer script..."
-        if ($IsWSL) {
-            Write-Host "Please run the commands equivalent to:"
-            Write-Host ($installer.script -join "`r`n")
-        } else {
-            Invoke-Command ([scriptblock]::Create($installer.script -join "`r`n"))
-        }
+        $ScriptBlockText = $installer.script -join "`r`n"
+        if ($IsWsl) { $ScriptBlockText = $ScriptBlockText -replace "\\","/" }
+        Invoke-Command ([scriptblock]::Create($ScriptBlockText))
         return
     }
 
@@ -789,12 +786,9 @@ function run_uninstaller($manifest, $architecture, $dir) {
     $version = $manifest.version
     if($uninstaller.script) {
         write-output "Running uninstaller script..."
-        if ($IsWSL) {
-            Write-Host "Please run the commands equivalent to:"
-            Write-Host ($uninstaller.script -join "`r`n")
-        } else {
-            Invoke-Command ([scriptblock]::Create($uninstaller.script -join "`r`n"))
-        }
+        $ScriptBlockText = $uninstaller.script -join "`r`n"
+        if ($IsWsl) { $ScriptBlockText = $ScriptBlockText -replace "\\","/" }
+        Invoke-Command ([scriptblock]::Create($ScriptBlockText))
         return
     }
 
@@ -1045,12 +1039,9 @@ function Invoke-HookScript {
     $script = arch_specific $HookType $Manifest $Arch
     if ($script) {
         Write-Output "Running $HookType script..."
-        if ($IsWSL) {
-            Write-Host "Please run the commands equivalent to:"
-            Write-Host ($script -join "`r`n")
-        } else {
-            Invoke-Command ([scriptblock]::Create($script -join "`r`n"))
-        }
+        $ScriptBlockText = $script -join "`r`n"
+        if ($IsWsl) { $ScriptBlockText = $ScriptBlockText -replace "\\","/" }
+        Invoke-Command ([scriptblock]::Create($ScriptBlockText))
     }
 }
 
