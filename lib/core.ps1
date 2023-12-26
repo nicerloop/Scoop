@@ -1444,6 +1444,9 @@ function win_path($path) {
 Optimize-SecurityProtocol
 
 If ($IsLinux) { $IsWSL = (uname -a).ToLower().Contains('wsl') }
+If ($IsLinux -Or $IsMacOS) {
+    function attrib {}
+}
 
 # Load Scoop config
 if (($IsLinux -Or $isMacOS) -And (-not $env:XDG_CONFIG_HOME)) { $env:XDG_CONFIG_HOME = "$env:HOME/.config" }

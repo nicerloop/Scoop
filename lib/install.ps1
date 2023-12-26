@@ -908,7 +908,7 @@ function link_current($versiondir) {
     }
 
     New-DirectoryJunction $currentdir $versiondir | Out-Null
-    if (Get-Command 'attrib' -ErrorAction SilentlyContinue) { attrib $currentdir +R /L }
+    attrib $currentdir +R /L
     return $currentdir
 }
 
@@ -925,7 +925,7 @@ function unlink_current($versiondir) {
         Write-Host "Unlinking $(friendly_path $currentdir)"
 
         # remove read-only attribute on link
-        if (Get-Command 'attrib' -ErrorAction SilentlyContinue) { attrib $currentdir -R /L }
+        attrib $currentdir -R /L
 
         # remove the junction
         Remove-Item $currentdir -Recurse -Force -ErrorAction Stop
