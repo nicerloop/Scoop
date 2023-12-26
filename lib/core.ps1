@@ -794,7 +794,7 @@ function isFileLocked([string]$path) {
 }
 
 function is_directory([String] $path) {
-    return (Test-Path $path) -and (Get-Item $path) -is [System.IO.DirectoryInfo]
+    return (Test-Path $path) -and (Get-Item $path -Force) -is [System.IO.DirectoryInfo]
 }
 
 function movedir($from, $to) {
