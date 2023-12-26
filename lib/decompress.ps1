@@ -287,8 +287,11 @@ function Expand-DarkArchive {
         [Switch]
         $Removal
     )
-    $LogPath = "$(Split-Path $Path)\dark.log"
+    $LogPath = Join-Path (Split-Path $Path) "dark.log"
     $ArgList = @('-nologo', '-x', $DestinationPath, $Path)
+    if ($IsWSL) {
+        $ArgList = @('-nologo', '-x', (win_path $DestinationPath), (win_path $Path))
+    }
     if ($Switches) {
         $ArgList += (-split $Switches)
     }
