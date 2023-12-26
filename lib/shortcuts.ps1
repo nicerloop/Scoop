@@ -25,7 +25,11 @@ function shortcut_folder($global) {
     } else {
         $startmenu = 'StartMenu'
     }
-    return Convert-Path (ensure ([System.IO.Path]::Combine([Environment]::GetFolderPath($startmenu), 'Programs', 'Scoop Apps')))
+    $menufolder = [Environment]::GetFolderPath($startmenu)
+    if ($IsWSL) {
+        $menufolder = wslpath -u $(powershell.exe -c "[Environment]::GetFolderPath(`'$startmenu`')")
+    }
+    return Convert-Path (ensure ([System.IO.Path]::Combine($menufolder, 'Programs', 'Scoop Apps')))
 }
 
 function startmenu_shortcut([System.IO.FileInfo] $target, $shortcutName, $arguments, [System.IO.FileInfo]$icon, $global) {
@@ -42,6 +46,28 @@ function startmenu_shortcut([System.IO.FileInfo] $target, $shortcutName, $argume
     $subdirectory = [System.IO.Path]::GetDirectoryName($shortcutName)
     if ($subdirectory) {
         $subdirectory = ensure $([System.IO.Path]::Combine($scoop_startmenu_folder, $subdirectory))
+    }
+
+    if ($IsWSL) {
+        write-host "Creating shortcut for $shortcutName ($(fname $target))"
+        $scoop_startmenu_folder = win_path $scoop_startmenu_folder
+        $targetPath = win_path $target.FullName
+        $WorkingDirectory = win_path $target.DirectoryName
+        $lines = [System.Collections.ArrayList]@(
+            "`$wsShell = New-Object -ComObject WScript.Shell",
+            "`$wsShell = `$wsShell.CreateShortcut(`'$scoop_startmenu_folder\$shortcutName.lnk`')",
+            "`$wsShell.TargetPath = `'$targetPath`'",
+            "`$wsShell.WorkingDirectory = `'$WorkingDirectory`'"
+        )
+        if ($arguments) { $lines.Add("`$wsShell.Arguments = `'$arguments`'") }
+        if ($icon -and $icon.Exists) {
+            $iconFullName = $icon.FullName
+            $lines.Add("`$wsShell.IconLocation = `'$iconFullName`'")
+        }
+        $lines.Add("`$wsShell.Save()")
+        $command = ($lines -join "`r`n")
+        powershell.exe -c "& { `$( $command ) }"
+        return
     }
 
     $wsShell = New-Object -ComObject WScript.Shell
