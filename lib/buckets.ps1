@@ -138,7 +138,7 @@ function add_bucket($name, $repo) {
     }
     foreach ($bucket in Get-LocalBucket) {
         if (Test-Path -Path "$bucketsdir\$bucket\.git") {
-            $remote = Invoke-Git -Path "$bucketsdir\$bucket" -ArgumentList @('config', '--get', 'remote.origin.url')
+            $remote = Invoke-Git -Path (Join-Path $bucketsdir $bucket) -ArgumentList @('config', '--get', 'remote.origin.url')
             if ((Convert-RepositoryUri -Uri $remote) -eq $uni_repo) {
                 warn "Bucket $bucket already exists for $repo"
                 return 2
@@ -174,7 +174,7 @@ function rm_bucket($name) {
 function new_issue_msg($app, $bucket, $title, $body) {
     $app, $manifest, $bucket, $url = Get-Manifest "$bucket/$app"
     $url = known_bucket_repo $bucket
-    $bucket_path = "$bucketsdir\$bucket"
+    $bucket_path = Join-Path $bucketsdir $bucket
 
     if (Test-Path $bucket_path) {
         $remote = Invoke-Git -Path $bucket_path -ArgumentList @('config', '--get', 'remote.origin.url')

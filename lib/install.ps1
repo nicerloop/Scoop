@@ -611,7 +611,7 @@ function Invoke-ScoopDownload ($app, $version, $manifest, $bucket, $architecture
             Write-Host "Extracting " -NoNewline
             Write-Host $fname -f Cyan -NoNewline
             Write-Host " ... " -NoNewline
-            & $extract_fn -Path "$dir\$fname" -DestinationPath "$dir\$extract_to" -ExtractDir $extract_dir -Removal
+            & $extract_fn -Path (Join-Path $dir $fname) -DestinationPath (Join-Path  $dir $extract_to) -ExtractDir $extract_dir -Removal
             Write-Host "done." -f Green
             $extracted++
         }
