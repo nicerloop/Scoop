@@ -147,14 +147,17 @@ function Expand-MsiArchive {
         $OriDestinationPath = $DestinationPath
         $DestinationPath = "$DestinationPath\_tmp"
     }
-    if ((get_config USE_LESSMSI)) {
+    if ($IsMacOS -Or $IsLinux) {
+        $MsiPath = 'msiextract'
+        $ArgList = @('--directory', $DestinationPath.Replace("\","/"), $Path.Replace("\","/"))
+    } elseif ((get_config USE_LESSMSI)) {
         $MsiPath = Get-HelperPath -Helper Lessmsi
         $ArgList = @('x', $Path, "$DestinationPath\")
     } else {
         $MsiPath = 'msiexec.exe'
         $ArgList = @('/a', "`"$Path`"", '/qn', "TARGETDIR=`"$DestinationPath\SourceDir`"")
     }
-    $LogPath = "$(Split-Path $Path)\msi.log"
+    $LogPath = Join-Path (Split-Path $Path) "msi.log"
     if ($Switches) {
         $ArgList += (-split $Switches)
     }
