@@ -65,12 +65,12 @@ function startmenu_shortcut([System.IO.FileInfo] $target, $shortcutName, $argume
             "`$wsShell.TargetPath = `'$targetPath`'",
             "`$wsShell.WorkingDirectory = `'$WorkingDirectory`'"
         )
-        if ($arguments) { $lines.Add("`$wsShell.Arguments = `'$arguments`'") }
+        if ($arguments) { $lines.Add("`$wsShell.Arguments = `'$arguments`'") | Out-Null }
         if ($icon -and $icon.Exists) {
             $iconFullName = $icon.FullName
-            $lines.Add("`$wsShell.IconLocation = `'$iconFullName`'")
+            $lines.Add("`$wsShell.IconLocation = `'$iconFullName`'")  | Out-Null
         }
-        $lines.Add("`$wsShell.Save()")
+        $lines.Add("`$wsShell.Save()") | Out-Null
         $command = ($lines -join "`r`n")
         powershell.exe -c "& { `$( $command ) }"
         return
