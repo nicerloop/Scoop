@@ -1005,7 +1005,9 @@ function env_set($manifest, $dir, $global, $arch) {
         $env_set | Get-Member -Member NoteProperty | ForEach-Object {
             $name = $_.name;
             $val = format $env_set.$($_.name) @{ "dir" = $dir }
-            if ($IsWSL) { $val = win_path $val }
+Write-Host val $val
+            if ($IsWSL) { $val = win_path ($val -replace "\\","/") }
+Write-Host val $val
             env $name $global $val
             Set-Content env:\$name $val
         }
