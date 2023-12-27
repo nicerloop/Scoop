@@ -963,47 +963,27 @@ function shim($path, $global, $name, $arg) {
         }
         $ps1text -join "`r`n" | Out-UTF8File "$shim.ps1"
 
-        if ($IsWSL) { $wsl_resolved_path = (wslpath -u $resolved_path) }
-
         # make ps1 accessible from cmd.exe
         warn_on_overwrite "$shim.cmd" $path
         @(
             "@rem $resolved_path",
             "@echo off",
-            "powershell -Command `"exit ((Get-ExecutionPolicy) -Eq 'AllSigned')`"",
-            "if %errorlevel% equ 1 goto wsl",
             "where /q pwsh.exe",
             "if %errorlevel% equ 0 (",
             "    pwsh -noprofile -ex unrestricted -file `"$resolved_path`" $arg %*",
             ") else (",
             "    powershell -noprofile -ex unrestricted -file `"$resolved_path`" $arg %*",
-            ")",
-            "exit %errorlevel%"
-            ":wsl",
-            "wsl -- /bin/sh -c `"PWSH=/usr/bin/pwsh ; test -x /snap/bin/pwsh && PWSH=/snap/bin/pwsh ; \`$PWSH -file '$wsl_resolved_path' $arg %*`"",
-            "exit %errorlevel%"
+            ")"
         ) -join "`r`n" | Out-UTF8File "$shim.cmd"
 
         warn_on_overwrite $shim $path
         @(
             "#!/bin/sh",
             "# $resolved_path",
-            "if command -v powershell.exe > /dev/null 2>&1; then",
-            "    powershell.exe -Command `"exit ((Get-ExecutionPolicy) -Eq 'AllSigned')`"",
-            "    if `$? ; then",
-            "        if command -v pwsh > /dev/null 2>&1; then",
-            "            pwsh -Command `"exit ((Get-ExecutionPolicy) -Ne 'AllSigned')`"",
-            "            if `$? ; then",
-            "                pwsh -file `"$wsl_resolved_path`" $arg `"`$@`"",
-            "            fi",
-            "        fi",
-            "    else",
             "if command -v pwsh.exe > /dev/null 2>&1; then",
             "    pwsh.exe -noprofile -ex unrestricted -file `"$resolved_path`" $arg `"$@`"",
             "else",
             "    powershell.exe -noprofile -ex unrestricted -file `"$resolved_path`" $arg `"$@`"",
-            "fi",
-            "    fi",
             "fi"
         ) -join "`n" | Out-UTF8File $shim -NoNewLine
     } elseif ($path -match '\.jar$') {
