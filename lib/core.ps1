@@ -934,6 +934,16 @@ function shim($path, $global, $name, $arg) {
             "MSYS2_ARG_CONV_EXCL=/C cmd.exe /C `"$resolved_path`" $arg `"$@`""
         ) -join "`n" | Out-UTF8File $shim -NoNewLine
     } elseif ($path -match '\.ps1$') {
+        if ($IsWSL) {
+            $wsl_resolved_path = (wslpath -u $resolved_path)
+            # exe shim has priority over ps1 shim
+            warn_on_overwrite "$shim.shim" $path
+            Copy-Item (get_shim_path) "$shim.exe" -Force
+            Write-Output "path = wsl" | Out-UTF8File "$shim.shim"
+            $PWSH = which pwsh
+            Write-Output "args = $PWSH -file `"$wsl_resolved_path`"" | Out-UTF8File "$shim.shim" -Append
+            return
+        }
         # if $path points to another drive resolve-path prepends .\ which could break shims
         warn_on_overwrite "$shim.ps1" $path
         $ps1text = if ($relative_path -match '^(\.\\)?\w:.*$') {
