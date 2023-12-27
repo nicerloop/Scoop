@@ -195,7 +195,7 @@ function Expand-MsiArchive {
     if (Test-Path $LogPath) {
         Remove-Item $LogPath -Force
     }
-    if ($Removal) {
+    if ($Removal -And (Test-Path $Path)) {
         # Remove original archive file
         Remove-Item $Path -Force
     }
