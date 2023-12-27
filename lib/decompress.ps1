@@ -219,6 +219,10 @@ function Expand-InnoArchive {
         $Removal
     )
     $LogPath = Join-Path (Split-Path $Path) "innounp.log"
+    if ($IsWSL) {
+        $Path = win_path $Path
+        $DestinationPath = win_path $DestinationPath
+    }
     $ArgList = @('-x', "-d$DestinationPath", $Path, '-y')
     switch -Regex ($ExtractDir) {
         '^[^{].*' { $ArgList += "-c{app}\$ExtractDir" }
@@ -229,6 +233,10 @@ function Expand-InnoArchive {
         $ArgList += (-split $Switches)
     }
     $Status = Invoke-ExternalCommand (Get-HelperPath -Helper Innounp) $ArgList -LogPath $LogPath
+    if ($IsWSL) {
+        $Path = wslpath -u $Path
+        $DestinationPath = wslpath -u $DestinationPath
+    }
     if (!$Status) {
         abort "Failed to extract files from $Path.`nLog file:`n  $(friendly_path $LogPath)`n$(new_issue_msg $app $bucket 'decompress error')"
     }
