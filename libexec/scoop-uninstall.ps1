@@ -115,7 +115,7 @@ if (!$apps) { exit 0 }
         }
     }
     if (Test-Path ($currentDir = Join-Path $appDir 'current')) {
-        attrib $currentDir -R /L
+        if (Get-Command 'attrib' -ErrorAction Ignore) { attrib $currentDir -R /L }
         Remove-Item $currentDir -ErrorAction Stop -Force
     }
     if (!(Get-ChildItem $appDir)) {
