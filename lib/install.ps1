@@ -956,13 +956,15 @@ function find_dir_or_subdir($path, $dir) {
     $dir = $dir.trimend('\')
     $fixed = @()
     $removed = @()
-    $path.split(';') | ForEach-Object {
+    $pathSep = [IO.Path]::PathSeparator
+    if ($null -Eq $path) { $path = "" }
+    $path.split($pathSep) | ForEach-Object {
         if($_) {
             if(($_ -eq $dir) -or ($_ -like "$dir\*")) { $removed += $_ }
             else { $fixed += $_ }
         }
     }
-    return [string]::join(';', $fixed), $removed
+    return [string]::join($pathSep, $fixed), $removed
 }
 
 function env_add_path($manifest, $dir, $global, $arch) {
