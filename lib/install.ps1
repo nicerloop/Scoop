@@ -1240,6 +1240,10 @@ function test_running_process($app, $global) {
 # wrapper function to create junction links
 # Required to handle docker/for-win#12240
 function New-DirectoryJunction($source, $target) {
+    if ($IsLinux -Or $IsMacOs) {
+        ln -s $target $source
+        return
+    }
     # test if this script is being executed inside a docker container
     if (Get-Service -Name cexecsvc -ErrorAction SilentlyContinue) {
         cmd.exe /d /c "mklink /j `"$source`" `"$target`""
