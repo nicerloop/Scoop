@@ -30,7 +30,7 @@ $apps | Where-Object { !$query -or ($_.name -match $query) } | ForEach-Object {
     $item.Name = $app
     $item.Version = $ver
 
-    $install_info_path = "$(versiondir $app $ver $global)\install.json"
+    $install_info_path = Join-Path (versiondir $app $ver $global) "install.json"
     $updated = (Get-Item (appdir $app $global)).LastWriteTime
     $install_info = $null
     if (Test-Path $install_info_path) {

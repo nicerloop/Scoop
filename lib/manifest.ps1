@@ -93,11 +93,11 @@ function save_install_info($info, $dir) {
     $nulls | ForEach-Object { $info.remove($_) } # strip null-valued
 
     $file_content = $info | ConvertToPrettyJson # in 'json.ps1'
-    [System.IO.File]::WriteAllLines("$dir\install.json", $file_content)
+    [System.IO.File]::WriteAllLines((Join-Path $dir "install.json"), $file_content)
 }
 
 function install_info($app, $version, $global) {
-    $path = "$(versiondir $app $version $global)\install.json"
+    $path = Join-Path (versiondir $app $version $global) "install.json"
     if (!(Test-Path $path)) { return $null }
     parse_json $path
 }

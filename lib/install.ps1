@@ -893,7 +893,7 @@ function rm_shims($app, $manifest, $global, $arch) {
 function link_current($versiondir) {
     if (get_config NO_JUNCTION) { return $versiondir.ToString() }
 
-    $currentdir = "$(Split-Path $versiondir)\current"
+    $currentdir = Join-Path (Split-Path $versiondir) "current"
 
     Write-Host "Linking $(friendly_path $currentdir) => $(friendly_path $versiondir)"
 

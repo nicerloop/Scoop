@@ -310,11 +310,11 @@ function filesize($length) {
 
 # dirs
 function basedir($global) { if($global) { return $globaldir } $scoopdir }
-function appsdir($global) { "$(basedir $global)\apps" }
-function shimdir($global) { "$(basedir $global)\shims" }
-function modulesdir($global) { "$(basedir $global)\modules" }
-function appdir($app, $global) { "$(appsdir $global)\$app" }
-function versiondir($app, $version, $global) { "$(appdir $app $global)\$version" }
+function appsdir($global) { Join-Path (basedir $global) "apps" }
+function shimdir($global) { Join-Path (basedir $global) "shims" }
+function modulesdir($global) { Join-Path (basedir $global) "modules" }
+function appdir($app, $global) { Join-Path (appsdir $global) $app }
+function versiondir($app, $version, $global) { Join-Path (appdir $app $global) $version }
 
 function currentdir($app, $global) {
     if (get_config NO_JUNCTION) {
@@ -322,7 +322,7 @@ function currentdir($app, $global) {
     } else {
         $version = 'current'
     }
-    "$(appdir $app $global)\$version"
+    Join-Path (appdir $app $global) $version
 }
 
 function persistdir($app, $global) { "$(basedir $global)\persist\$app" }
@@ -1414,7 +1414,7 @@ Optimize-SecurityProtocol
 
 # Load Scoop config
 $configHome = $env:XDG_CONFIG_HOME, "$env:USERPROFILE\.config" | Select-Object -First 1
-$configFile = "$configHome\scoop\config.json"
+$configFile = Join-Path (Join-Path $configHome "scoop") "config.json"
 # Check if it's the expected install path for scoop: <root>/apps/scoop/current
 $coreRoot = Split-Path $PSScriptRoot
 $pathExpected = ($coreRoot -replace '\\','/') -like '*apps/scoop/current*'

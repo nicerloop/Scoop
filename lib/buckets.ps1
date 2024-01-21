@@ -1,4 +1,4 @@
-$bucketsdir = "$scoopdir\buckets"
+$bucketsdir = Join-Path $scoopdir "buckets"
 
 function Find-BucketDirectory {
     <#
@@ -19,10 +19,10 @@ function Find-BucketDirectory {
     if (($null -eq $Name) -or ($Name -eq '')) {
         $Name = 'main'
     }
-    $bucket = "$bucketsdir\$Name"
+    $bucket = Join-Path $bucketsdir $Name
 
     if ((Test-Path "$bucket\bucket") -and !$Root) {
-        $bucket = "$bucket\bucket"
+        $bucket = Join-Path $bucket "bucket"
     }
 
     return $bucket
@@ -35,7 +35,7 @@ function bucketdir($name) {
 }
 
 function known_bucket_repos {
-    $json = "$PSScriptRoot\..\buckets.json"
+    $json = Join-Path (Join-Path $PSScriptRoot "..") "buckets.json"
 
     return Get-Content $json -Raw | ConvertFrom-Json -ErrorAction stop
 }
@@ -138,7 +138,7 @@ function add_bucket($name, $repo) {
     }
     foreach ($bucket in Get-LocalBucket) {
         if (Test-Path -Path "$bucketsdir\$bucket\.git") {
-            $remote = Invoke-Git -Path "$bucketsdir\$bucket" -ArgumentList @('config', '--get', 'remote.origin.url')
+            $remote = Invoke-Git -Path (Join-Path $bucketsdir $bucket) -ArgumentList @('config', '--get', 'remote.origin.url')
             if ((Convert-RepositoryUri -Uri $remote) -eq $uni_repo) {
                 warn "Bucket $bucket already exists for $repo"
                 return 2
